@@ -8,6 +8,7 @@ export interface DashboardData {
     final_wealth: number | null;
     monthly_income: number | null;
     current_savings: number | null;
+    scenario_name?: string;
     last_updated: string | null;
   } | null;
   health: {

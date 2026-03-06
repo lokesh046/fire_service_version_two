@@ -62,6 +62,12 @@ async def startup():
                 await conn.execute(text("ALTER TABLE users ADD CONSTRAINT uq_users_username UNIQUE (username);"))
             except Exception:
                 pass
+            
+            try:
+                await conn.execute(text("ALTER TABLE fire_calculations ADD COLUMN scenario_name VARCHAR DEFAULT 'Primary Goal';"))
+                print("[MIGRATION] Added scenario_name column to fire_calculations.")
+            except Exception:
+                pass
         print("[SUCCESS] Database connection established, tables synced, and username migrated.")
     except TimeoutError:
         print("[WARNING] Could not connect to database during startup. Retrying on first request...")
@@ -111,6 +117,7 @@ class FinanceInput(BaseModel):
     loan_emi: float = 0
     loan_years: int = 0
     has_insurance: str
+    scenario_name: str = "Primary Goal"
 
 
 class LoanOnlyInput(BaseModel):
@@ -380,7 +387,8 @@ async def calculate_fire(
             current_savings=data.current_savings,
             fire_number=fire_data["fire_number"],
             fire_year=fire_data["fire_year"],
-            final_wealth=fire_data["final_wealth"]
+            final_wealth=fire_data["final_wealth"],
+            scenario_name=data.scenario_name
         )
     except Exception as e:
         print(f"Error saving fire calculation: {e}")
@@ -463,11 +471,11 @@ async def compare_loan_vs_fire(
                 return {"error": "Loan service failed", "details": loan_response.text}
 
             loan_data = loan_response.json()
-            recommended_emi = loan_data.get("optimal_emi_suggestions", {}).get("recommended_option", {}).get("emi", 0)
+            math_optimal_emi = loan_data.get("optimal_emi_suggestions", {}).get("recommended_option", {}).get("emi", 0)
 
-            # Calculate optimized FIRE with recommended EMI
+            # Calculate optimized FIRE with math optimal EMI
             modified_data = data.dict()
-            modified_data["loan_emi"] = recommended_emi
+            modified_data["loan_emi"] = math_optimal_emi
 
             fire_optimized = await client.post(
                 "http://localhost:8001/fire",
@@ -491,6 +499,9 @@ async def compare_loan_vs_fire(
                 if opt_y < curr_y and opt_y > 0
                 else "keep_current_emi"
             )
+
+            # Define the actual recommended EMI based on the strategy chosen
+            recommended_emi = math_optimal_emi if strategy == "increase_emi" else data.loan_emi
 
         # Calculate actual health score to pass to explain service
         health_score = 70.0
@@ -546,7 +557,8 @@ async def compare_loan_vs_fire(
                 current_savings=data.current_savings,
                 fire_number=fire_current_data.get("fire_number", 0),
                 fire_year=fire_current_data.get("fire_year", 0),
-                final_wealth=fire_current_data.get("final_wealth", 0)
+                final_wealth=fire_current_data.get("final_wealth", 0),
+                scenario_name=data.scenario_name
             )
     except Exception as e:
         print(f"Error saving fire: {e}")
@@ -559,7 +571,7 @@ async def compare_loan_vs_fire(
         "ai_explanation": ai_explanation,
         "loan_details": {
             "original_emi": data.loan_emi,
-            "optimal_emi": recommended_emi,
+            "optimal_emi": math_optimal_emi if strategy == "keep_current_emi" else recommended_emi,
             "interest_savings": loan_data.get("total_interest_paid", 0) - loan_data.get("optimal_emi_suggestions", {}).get("recommended_option", {}).get("total_interest_paid", 0)
         },
         "user_id": user.id
@@ -620,12 +632,14 @@ async def get_fire_history(
     return {
         "calculations": [
             {
+                "id": str(r.id),
                 "fire_number": r.fire_number,
                 "fire_year": r.fire_year,
                 "final_wealth": r.final_wealth,
                 "monthly_income": r.monthly_income,
                 "living_expense": r.living_expense,
                 "current_savings": r.current_savings,
+                "scenario_name": r.scenario_name,
                 "created_at": r.created_at.isoformat() if r.created_at else None
             }
             for r in records
@@ -711,7 +725,8 @@ async def fire_direct(
                         current_savings=data.current_savings,
                         fire_number=fire_data.get("fire_number", 0),
                         fire_year=fire_data.get("fire_year", 0),
-                        final_wealth=fire_data.get("final_wealth", 0)
+                        final_wealth=fire_data.get("final_wealth", 0),
+                        scenario_name=data.scenario_name
                     )
                 except Exception as e:
                     print(f"Error saving fire calculation: {e}")

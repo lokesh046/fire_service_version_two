@@ -5,7 +5,19 @@ import {
   type LoanFireStrategyResult,
 } from "../api/loan";
 
-const defaultForm: LoanFireStrategyInput = {
+type FormInput = Omit<LoanFireStrategyInput, "monthly_income" | "living_expense" | "current_savings" | "return_rate" | "inflation_rate" | "loan_amount" | "interest_rate_value" | "loan_emi" | "loan_years"> & {
+  monthly_income: number | "";
+  living_expense: number | "";
+  current_savings: number | "";
+  return_rate: number | "";
+  inflation_rate: number | "";
+  loan_amount: number | "";
+  interest_rate_value: number | "";
+  loan_emi: number | "";
+  loan_years: number | "";
+};
+
+const defaultForm: FormInput = {
   monthly_income: 150000,
   living_expense: 60000,
   current_savings: 500000,
@@ -21,12 +33,12 @@ const defaultForm: LoanFireStrategyInput = {
 };
 
 export function LoanStrategy() {
-  const [form, setForm] = useState<LoanFireStrategyInput>(defaultForm);
+  const [form, setForm] = useState<FormInput>(defaultForm);
   const [result, setResult] = useState<LoanFireStrategyResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const update = (key: keyof LoanFireStrategyInput, value: string | number) => {
+  const update = (key: keyof FormInput, value: string | number) => {
     setForm((prev) => ({ ...prev, [key]: value }));
     setResult(null);
     setError("");
@@ -80,7 +92,7 @@ export function LoanStrategy() {
               type="number"
               min={0}
               value={form.monthly_income}
-              onChange={(e) => update("monthly_income", Number(e.target.value))}
+              onChange={(e) => update("monthly_income", Number(e.target.value) || e.target.value === "" ? (e.target.value === "" ? "" : Number(e.target.value)) : 0)}
               className="w-full rounded-xl border border-slate-700/50 bg-slate-900/50 px-4 py-2.5 text-sm text-white focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500/50 transition-colors"
             />
           </div>
@@ -92,9 +104,7 @@ export function LoanStrategy() {
               type="number"
               min={0}
               value={form.living_expense}
-              onChange={(e) =>
-                update("living_expense", Number(e.target.value))
-              }
+              onChange={(e) => update("living_expense", Number(e.target.value) || e.target.value === "" ? (e.target.value === "" ? "" : Number(e.target.value)) : 0)}
               className="w-full rounded-xl border border-slate-700/50 bg-slate-900/50 px-4 py-2.5 text-sm text-white focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500/50 transition-colors"
             />
           </div>
@@ -106,9 +116,7 @@ export function LoanStrategy() {
               type="number"
               min={0}
               value={form.current_savings}
-              onChange={(e) =>
-                update("current_savings", Number(e.target.value))
-              }
+              onChange={(e) => update("current_savings", Number(e.target.value) || e.target.value === "" ? (e.target.value === "" ? "" : Number(e.target.value)) : 0)}
               className="w-full rounded-xl border border-slate-700/50 bg-slate-900/50 px-4 py-2.5 text-sm text-white focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500/50 transition-colors"
             />
           </div>
@@ -122,7 +130,7 @@ export function LoanStrategy() {
               max={1}
               step={0.01}
               value={form.return_rate}
-              onChange={(e) => update("return_rate", Number(e.target.value))}
+              onChange={(e) => update("return_rate", Number(e.target.value) || e.target.value === "" ? (e.target.value === "" ? "" : Number(e.target.value)) : 0)}
               className="w-full rounded-xl border border-slate-700/50 bg-slate-900/50 px-4 py-2.5 text-sm text-white focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500/50 transition-colors"
             />
           </div>
@@ -136,9 +144,7 @@ export function LoanStrategy() {
               max={1}
               step={0.01}
               value={form.inflation_rate}
-              onChange={(e) =>
-                update("inflation_rate", Number(e.target.value))
-              }
+              onChange={(e) => update("inflation_rate", Number(e.target.value) || e.target.value === "" ? (e.target.value === "" ? "" : Number(e.target.value)) : 0)}
               className="w-full rounded-xl border border-slate-700/50 bg-slate-900/50 px-4 py-2.5 text-sm text-white focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500/50 transition-colors"
             />
           </div>
@@ -150,7 +156,7 @@ export function LoanStrategy() {
               type="number"
               min={0}
               value={form.loan_emi}
-              onChange={(e) => update("loan_emi", Number(e.target.value))}
+              onChange={(e) => update("loan_emi", Number(e.target.value) || e.target.value === "" ? (e.target.value === "" ? "" : Number(e.target.value)) : 0)}
               className="w-full rounded-xl border border-slate-700/50 bg-slate-900/50 px-4 py-2.5 text-sm text-white focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500/50 transition-colors"
             />
           </div>
@@ -162,7 +168,7 @@ export function LoanStrategy() {
               type="number"
               min={1}
               value={form.loan_years}
-              onChange={(e) => update("loan_years", Number(e.target.value))}
+              onChange={(e) => update("loan_years", Number(e.target.value) || e.target.value === "" ? (e.target.value === "" ? "" : Number(e.target.value)) : 0)}
               className="w-full rounded-xl border border-slate-700/50 bg-slate-900/50 px-4 py-2.5 text-sm text-white focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500/50 transition-colors"
             />
           </div>
@@ -174,9 +180,7 @@ export function LoanStrategy() {
               type="number"
               min={0}
               value={form.interest_rate_value}
-              onChange={(e) =>
-                update("interest_rate_value", Number(e.target.value))
-              }
+              onChange={(e) => update("interest_rate_value", Number(e.target.value) || e.target.value === "" ? (e.target.value === "" ? "" : Number(e.target.value)) : 0)}
               className="w-full rounded-xl border border-slate-700/50 bg-slate-900/50 px-4 py-2.5 text-sm text-white focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500/50 transition-colors"
             />
           </div>

@@ -1,5 +1,14 @@
 import { useState } from "react";
 import { calculateFire, getFireExplanation, type FireInput } from "../api/fire";
+import {
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  Tooltip,
+  CartesianGrid,
+  ResponsiveContainer,
+} from "recharts";
 
 type FormInput = Omit<FireInput, "monthly_income" | "living_expense" | "current_savings" | "return_rate" | "inflation_rate" | "loan_amount" | "interest_rate_value" | "loan_emi" | "loan_years"> & {
   monthly_income: number | "";
@@ -11,9 +20,11 @@ type FormInput = Omit<FireInput, "monthly_income" | "living_expense" | "current_
   interest_rate_value: number | "";
   loan_emi: number | "";
   loan_years: number | "";
+  scenario_name: string;
 };
 
 const defaultForm: FormInput = {
+  scenario_name: "Primary Goal",
   monthly_income: 150000,
   living_expense: 60000,
   current_savings: 500000,
@@ -157,6 +168,18 @@ export function FireCalculator() {
 
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <div className="md:col-span-2">
+            <label className="block text-xs font-medium text-slate-300 mb-1">
+              Scenario Name
+            </label>
+            <input
+              type="text"
+              value={form.scenario_name}
+              onChange={(e) => update("scenario_name", e.target.value)}
+              placeholder="e.g. Primary Goal, Retire at 40, Buy a House"
+              className="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-colors"
+            />
+          </div>
           <div>
             <label className="block text-xs font-medium text-slate-300 mb-1">
               Monthly Income (₹)
@@ -368,6 +391,53 @@ export function FireCalculator() {
             <p className="text-slate-400 text-xs">
               Saved to your dashboard and history.
             </p>
+          )}
+
+          {/* Projection Chart */}
+          {result.fire_year > 0 && result.fire_year <= 100 && (
+            <div className="mt-8">
+              <h3 className="text-sm font-medium text-slate-300 mb-4">Wealth Projection</h3>
+              <div className="h-[250px] w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart
+                    data={Array.from({ length: result.fire_year + 1 }).map((_, i) => {
+                      // Formula for compounding: FV = PV(1+r)^n + PMT [ ((1+r)^n - 1) / r ]
+                      const realReturn = ((1 + (Number(form.return_rate) || 0.12)) / (1 + (Number(form.inflation_rate) || 0.06))) - 1;
+                      const savings = Number(form.current_savings) || 0;
+                      const annualPMT = netCashflow * 12; // simplified
+                      const wealth = savings * Math.pow(1 + realReturn, i) + (annualPMT > 0 ? annualPMT * ((Math.pow(1 + realReturn, i) - 1) / realReturn) : 0);
+                      return {
+                        year: `Year ${i}`,
+                        wealth: wealth > 0 ? wealth : 0
+                      };
+                    })}
+                    margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
+                  >
+                    <defs>
+                      <linearGradient id="colorWealth" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
+                        <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#1e293b" />
+                    <XAxis dataKey="year" stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} dy={10} />
+                    <YAxis
+                      stroke="#64748b"
+                      fontSize={12}
+                      tickLine={false}
+                      axisLine={false}
+                      tickFormatter={(value) => `₹${(value / 1e5).toFixed(0)}L`}
+                    />
+                    <Tooltip
+                      contentStyle={{ backgroundColor: "rgba(15, 23, 42, 0.9)", border: "1px solid rgba(255, 255, 255, 0.1)", borderRadius: "12px", color: "#f8fafc" }}
+                      itemStyle={{ color: "#34d399", fontWeight: 600 }}
+                      formatter={(value: number) => [`₹${(value / 1e5).toFixed(2)}L`, "Projected Wealth"]}
+                    />
+                    <Area type="monotone" dataKey="wealth" stroke="#10b981" strokeWidth={2} fillOpacity={1} fill="url(#colorWealth)" />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
           )}
 
           <div className="pt-4 border-t border-slate-800">

@@ -25,6 +25,8 @@ class FireCalculation(Base):
     fire_year = Column(Integer)
     final_wealth = Column(Float)
 
+    scenario_name = Column(String, default="Primary Goal")
+
     created_at = Column(DateTime, default=datetime.utcnow)
 
     user = relationship("User", back_populates="fire_calculations")

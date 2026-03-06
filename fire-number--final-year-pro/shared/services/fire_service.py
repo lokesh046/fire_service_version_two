@@ -14,7 +14,8 @@ async def save_fire_calculation(
     current_savings: float,
     fire_number: float,
     fire_year: float,
-    final_wealth: float
+    final_wealth: float,
+    scenario_name: str = "Primary Goal"
 ):
     fire_record = FireCalculation(
         id=uuid.uuid4(),
@@ -25,6 +26,7 @@ async def save_fire_calculation(
         fire_number=fire_number,
         fire_year=fire_year,
         final_wealth=final_wealth,
+        scenario_name=scenario_name,
         created_at=datetime.utcnow()
     )
 

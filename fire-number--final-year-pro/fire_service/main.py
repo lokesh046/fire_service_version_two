@@ -64,7 +64,7 @@ def calculate_fire(
     if isinstance(fire_year, str):
         return FireResponse(
             fire_number=result["fire_number"],
-            fire_year=0,
+            fire_year=fire_year,
             final_wealth=result["final_wealth"],
             monthly_savings_needed=result.get("monthly_savings_needed", 0),
             savings_rate=result.get("savings_rate", 0),

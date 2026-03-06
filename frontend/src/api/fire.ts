@@ -13,6 +13,7 @@ export interface FireInput {
   loan_emi: number;
   loan_years: number;
   has_insurance: string;
+  scenario_name: string;
 }
 
 export const calculateFire = async (data: FireInput) => {
