@@ -3,11 +3,12 @@ API Gateway with Automatic Token Handling via Cookies
 After login, all subsequent requests automatically use the stored token
 """
 
-from fastapi import FastAPI, Depends, HTTPException, status, Response, Request, Cookie, Header
+from fastapi import FastAPI, Depends, HTTPException, status, Response, Request, Cookie, Header, UploadFile, File
 from pydantic import BaseModel
 from typing import Optional
 import httpx
 import uuid
+import os
 
 from shared.services.service_auth import get_current_user, CurrentUser, create_access_token
 from shared.services.auth_routes import router as auth_router
@@ -40,9 +41,28 @@ app.add_middleware(
 @app.on_event("startup")
 async def startup():
     try:
+        from sqlalchemy import text
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
-        print("[SUCCESS] Database connection established and tables created")
+            try:
+                await conn.execute(text("ALTER TABLE users ADD COLUMN username VARCHAR;"))
+                print("[MIGRATION] Added username column.")
+            except Exception:
+                pass
+            try:
+                await conn.execute(text("UPDATE users SET username = split_part(email, '@', 1) WHERE username IS NULL OR username = '';"))
+                print("[MIGRATION] Updated usernames from email.")
+            except Exception:
+                pass
+            try:
+                await conn.execute(text("ALTER TABLE users ALTER COLUMN username SET NOT NULL;"))
+            except Exception:
+                pass
+            try:
+                await conn.execute(text("ALTER TABLE users ADD CONSTRAINT uq_users_username UNIQUE (username);"))
+            except Exception:
+                pass
+        print("[SUCCESS] Database connection established, tables synced, and username migrated.")
     except TimeoutError:
         print("[WARNING] Could not connect to database during startup. Retrying on first request...")
     except Exception as e:
@@ -70,6 +90,7 @@ def get_current_user_from_token(token: Optional[str]) -> Optional[CurrentUser]:
         return CurrentUser(
             id=token_data.user_id or "unknown",
             email=token_data.email or "",
+            username=token_data.username or "",
             role=token_data.role or "user",
             tenant_id=token_data.tenant_id
         )
@@ -139,13 +160,108 @@ async def root():
 async def health_check():
     return {"status": "healthy", "service": "api_gateway"}
 
+@app.post("/dev/promote_to_admin")
+async def dev_promote_to_admin(email: str, db_session=Depends(get_db)):
+    from sqlalchemy import text
+    try:
+        result = await db_session.execute(
+            text("UPDATE users SET role = 'admin' WHERE email = :email RETURNING id"),
+            {"email": email}
+        )
+        updated_id = result.scalar()
+        await db_session.commit()
+        if updated_id:
+            return {"message": f"Successfully promoted {email} to admin!"}
+        else:
+            return {"error": f"User {email} not found."}
+    except Exception as e:
+        await db_session.rollback()
+        return {"error": str(e)}
+
+# ============================================================
+# EXPLAIN SERVICE ADMIN PROXIES (RAG DB)
+# ============================================================
+
+EXPLAIN_SERVICE_URL = "http://localhost:8005"
+# The backend explain service requires an ADMIN_API_KEY header.
+EXPLAIN_ADMIN_KEY = os.getenv("ADMIN_API_KEY", "super_secret_key_change_me")
+
+@app.post("/admin/upload")
+async def admin_upload_gateway(
+    file: UploadFile = File(...),
+    user: CurrentUser = Depends(require_auth)
+):
+    if user.role != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin access required"
+        )
+    
+    try:
+        file_bytes = await file.read()
+        async with httpx.AsyncClient() as client:
+            # We need to forward the file to the explain service as multipart/form-data
+            files = {'file': (file.filename, file_bytes, file.content_type)}
+            headers = {"api-key": EXPLAIN_ADMIN_KEY}
+            
+            response = await client.post(
+                f"{EXPLAIN_SERVICE_URL}/admin/upload",
+                files=files,
+                headers=headers,
+                timeout=60.0
+            )
+            
+            if response.status_code != 200:
+                raise HTTPException(
+                    status_code=response.status_code,
+                    detail=f"Downstream error: {response.text}"
+                )
+            return response.json()
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.delete("/admin/delete")
+async def admin_delete_gateway(
+    source: str,
+    user: CurrentUser = Depends(require_auth)
+):
+    if user.role != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin access required"
+        )
+        
+    async with httpx.AsyncClient() as client:
+        headers = {"api-key": EXPLAIN_ADMIN_KEY}
+        
+        response = await client.delete(
+            f"{EXPLAIN_SERVICE_URL}/admin/delete",
+            params={"source": source},
+            headers=headers,
+            timeout=30.0
+        )
+        
+        if response.status_code != 200:
+            raise HTTPException(
+                status_code=response.status_code,
+                detail=f"Downstream error: {response.text}"
+            )
+        return response.json()
 
 # ============================================================
 # CHAT AGENT ENDPOINT
 # ============================================================
 
+class ChatMessage(BaseModel):
+    role: str
+    content: str
+    
 class ChatRequest(BaseModel):
     message: str
+    history: Optional[list[ChatMessage]] = None
+    state: Optional[dict] = None
 
 
 @app.post("/chat-agent")
@@ -161,9 +277,15 @@ async def chat_agent(
 
     async with httpx.AsyncClient() as client:
         try:
+            payload = {"message": data.message}
+            if data.history is not None:
+                payload["history"] = [h.dict() for h in data.history]
+            if data.state is not None:
+                payload["state"] = data.state
+                
             response = await client.post(
                 "http://localhost:5006/chat-agent",  # Chat service on port 5006
-                json={"message": data.message},
+                json=payload,
                 headers=headers,
                 timeout=60.0
             )
@@ -370,18 +492,39 @@ async def compare_loan_vs_fire(
                 else "keep_current_emi"
             )
 
+        # Calculate actual health score to pass to explain service
+        health_score = 70.0
+        try:
+            health_response = await client.post(
+                "http://localhost:8002/health-score",
+                json={
+                    "monthly_income": data.monthly_income,
+                    "living_expense": data.living_expense,
+                    "loan_emi": recommended_emi if strategy == "increase_emi" else data.loan_emi,
+                    "current_savings": data.current_savings,
+                    "fire_number": fire_optimized_data.get("fire_number", 0),
+                    "has_insurance": data.has_insurance
+                },
+                headers=headers,
+                timeout=10.0
+            )
+            if health_response.status_code == 200:
+                health_score = health_response.json().get("financial_health_score", 70.0)
+        except Exception as e:
+            print("Error fetching health score for explanation:", e)
+            
         # Try explain service (optional)
         ai_explanation = {}
         try:
             explain_response = await client.post(
-                "http://localhost:8005/explain-strategy",
+                f"{EXPLAIN_SERVICE_URL}/explain-strategy",
                 json={
                     "context_type": "loan_fire_strategy",
                     "current_fire_year": current_year,
                     "optimized_fire_year": optimized_year,
                     "recommended_emi": recommended_emi,
                     "strategy_recommendation": strategy,
-                    "financial_health_score": 70
+                    "financial_health_score": health_score
                 },
                 headers=headers,
                 timeout=30.0
@@ -451,6 +594,7 @@ async def get_current_user_info(
     return {
         "user_id": user.id,
         "email": user.email,
+        "username": user.username,
         "role": user.role
     }
 

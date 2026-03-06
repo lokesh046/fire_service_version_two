@@ -360,7 +360,7 @@ export function FireCalculator() {
             <div>
               <p className="text-slate-400 text-xs">Health Score</p>
               <p className="mt-1 text-lg font-semibold text-cyan-400">
-                {result.financial_health_score}/100
+                {result.financial_health_score.toFixed(2)}/100
               </p>
             </div>
           </div>

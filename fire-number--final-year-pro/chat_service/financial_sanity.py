@@ -7,16 +7,18 @@ class FinancialSanityEngine:
         errors = []
         warnings = []
 
-        income = state.monthly_income or 0
-        expense = state.living_expense or 0
-        savings = state.current_savings or 0
-        emi = state.loan_emi or 0
+        income = state.monthly_income if state.monthly_income is not None else 0
+        expense = state.living_expense if state.living_expense is not None else 0
+        savings = state.current_savings if state.current_savings is not None else 0
+        emi = state.loan_emi if state.loan_emi is not None else 0
 
         # ===============================
         # 🔴 HARD BLOCK CONDITIONS
         # ===============================
 
-        if income <= 0:
+        # Only error on income if it was actually provided as <= 0.
+        # If it's None, the Orchestrator will ask for it.
+        if state.monthly_income is not None and income <= 0:
             errors.append("Monthly income must be greater than zero.")
 
         if expense < 0:

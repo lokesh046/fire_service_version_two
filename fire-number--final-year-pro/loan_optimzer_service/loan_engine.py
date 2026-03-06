@@ -152,8 +152,9 @@ def suggest_optimal_emi(loan_amount, annual_interest_rate, tenure_years):
         })
 
     # Optimization criteria:
-    # Choose EMI that minimizes total interest
-    recommended = min(results, key=lambda x: x["total_interest_paid"])
+    # Always recommend the base EMI if +20% is too aggressive, or just return the +20% as an 'aggressive' option.
+    # We will pick the +20% increment as the recommended "optimized" path by default.
+    recommended = results[2] # 20% increment
 
     return {
         "emi_options": results,

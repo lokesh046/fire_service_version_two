@@ -18,6 +18,7 @@ export const loginUser = async (data: LoginData) => {
 };
 
 export const registerUser = async (data: {
+  username: string;
   email: string;
   password: string;
 }) => {

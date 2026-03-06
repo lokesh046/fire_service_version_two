@@ -1,9 +1,11 @@
 import { create } from "zustand";
 import { getMe } from "../api/auth";
+import { setAuthToken } from "../api/axios";
 
 export interface UserInfo {
   user_id: string;
   email: string;
+  username: string;
   role: string;
 }
 
@@ -29,6 +31,7 @@ export const useAuthStore = create<AuthState>((set) => ({
         user: {
           user_id: data.user_id,
           email: data.email,
+          username: data.username || data.email,
           role: data.role ?? "user",
         },
         checked: true,
@@ -36,10 +39,14 @@ export const useAuthStore = create<AuthState>((set) => ({
       });
       return true;
     } catch {
+      setAuthToken(null);
       set({ user: null, checked: true, isLoading: false });
       return false;
     }
   },
-  logoutLocal: () => set({ user: null }),
+  logoutLocal: () => {
+    setAuthToken(null);
+    set({ user: null });
+  },
 }));
 

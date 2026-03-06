@@ -1,9 +1,14 @@
 import axios from "axios";
 
-let authToken: string | null = null;
+let authToken: string | null = localStorage.getItem("auth_token");
 
 export const setAuthToken = (token: string | null) => {
   authToken = token;
+  if (token) {
+    localStorage.setItem("auth_token", token);
+  } else {
+    localStorage.removeItem("auth_token");
+  }
 };
 
 const API = axios.create({

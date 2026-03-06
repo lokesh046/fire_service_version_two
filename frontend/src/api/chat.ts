@@ -12,8 +12,13 @@ export interface ChatServiceResponse {
 
 export const chatWithAgent = async (
   message: string,
+  history?: { role: string; content: string }[],
+  state?: Record<string, unknown>
 ): Promise<ChatServiceResponse> => {
-  const response = await API.post("/chat-agent", { message });
+  const payload: any = { message };
+  if (history && history.length > 0) payload.history = history;
+  if (state && Object.keys(state).length > 0) payload.state = state;
+  const response = await API.post("/chat-agent", payload);
   return response.data;
 };
 

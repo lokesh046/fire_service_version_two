@@ -69,7 +69,7 @@ class FinancialInterpreter:
     # -------------------------------------------------
     # MAIN EXTRACTION
     # -------------------------------------------------
-    async def extract(self, message: str):
+    async def extract(self, message: str, history: list = None):
 
         # -----------------------------
         # Improved patterns
@@ -88,6 +88,10 @@ class FinancialInterpreter:
             "loan_emi": self.extract_number_phrase(emi_pattern, message),
             "loan_years": self.extract_number_phrase(years_pattern, message),
         }
+        
+        # Check loan negations
+        if re.search(r"(no loan|0 loan|zero loan|don't have a loan)", message, re.IGNORECASE):
+            data["has_loan"] = "no"
 
         # -----------------------------
         # LLM fallback if needed
@@ -95,9 +99,15 @@ class FinancialInterpreter:
         missing = [k for k, v in data.items() if v is None]
 
         if len(missing) >= 2:
+            
+            history_context = ""
+            if history:
+                # Include the last 4 exchanges to give the LLM context of what was just asked
+                recent_history = history[-4:]
+                history_context = "Recent Conversation Context:\n" + "\n".join([f"{h.get('role', 'unknown')}: {h.get('content', '')}" for h in recent_history])
 
             prompt = f"""
-            Extract structured financial data from this text.
+            Extract structured financial data from the user's latest message. Use the Conversation Context to understand what they are answering if their latest message is just a number.
 
             Convert words to numbers:
             - sixty thousand → 60000
@@ -105,17 +115,20 @@ class FinancialInterpreter:
             - five years → 5
 
             Return STRICT JSON only.
+            
+            {history_context}
 
-            Text:
+            Latest Message:
             {message}
 
             {{
                 "monthly_income": number or null,
                 "living_expense": number or null,
                 "current_savings": number or null,
+                "has_loan": "yes" or "no" or null,
                 "loan_emi": number or null,
                 "loan_years": number or null,
-                "has_insurance": "yes" or "no"
+                "has_insurance": "yes" or "no" or null
             }}
             """
 

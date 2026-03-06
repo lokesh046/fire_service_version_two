@@ -58,19 +58,22 @@ export function LoanStrategy() {
   };
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-white">Loan Strategy</h1>
-        <p className="text-slate-400 mt-1 text-sm">
+    <div className="space-y-8 relative">
+      {/* Background ambient glow for Loan Strategy */}
+      <div className="glow-bg bg-emerald-500/20 w-[400px] h-[400px] top-0 right-[-10%] mix-blend-screen absolute pointer-events-none"></div>
+
+      <div className="relative z-10">
+        <h1 className="text-3xl font-bold text-white tracking-tight">Loan Strategy</h1>
+        <p className="text-slate-400 mt-2 text-sm max-w-2xl">
           Compare your current EMI vs an optimized strategy and see its impact
           on your FIRE year.
         </p>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+      <form onSubmit={handleSubmit} className="relative z-10 glass-card rounded-2xl p-6 shadow-xl space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
           <div>
-            <label className="block text-xs font-medium text-slate-300 mb-1">
+            <label className="block text-xs font-semibold text-slate-300 mb-1.5 uppercase tracking-wider">
               Monthly Income (₹)
             </label>
             <input
@@ -78,11 +81,11 @@ export function LoanStrategy() {
               min={0}
               value={form.monthly_income}
               onChange={(e) => update("monthly_income", Number(e.target.value))}
-              className="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white"
+              className="w-full rounded-xl border border-slate-700/50 bg-slate-900/50 px-4 py-2.5 text-sm text-white focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500/50 transition-colors"
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-slate-300 mb-1">
+            <label className="block text-xs font-semibold text-slate-300 mb-1.5 uppercase tracking-wider">
               Living Expense (₹)
             </label>
             <input
@@ -92,11 +95,11 @@ export function LoanStrategy() {
               onChange={(e) =>
                 update("living_expense", Number(e.target.value))
               }
-              className="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white"
+              className="w-full rounded-xl border border-slate-700/50 bg-slate-900/50 px-4 py-2.5 text-sm text-white focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500/50 transition-colors"
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-slate-300 mb-1">
+            <label className="block text-xs font-semibold text-slate-300 mb-1.5 uppercase tracking-wider">
               Current Savings (₹)
             </label>
             <input
@@ -106,11 +109,11 @@ export function LoanStrategy() {
               onChange={(e) =>
                 update("current_savings", Number(e.target.value))
               }
-              className="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white"
+              className="w-full rounded-xl border border-slate-700/50 bg-slate-900/50 px-4 py-2.5 text-sm text-white focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500/50 transition-colors"
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-slate-300 mb-1">
+            <label className="block text-xs font-semibold text-slate-300 mb-1.5 uppercase tracking-wider">
               Return Rate (decimal)
             </label>
             <input
@@ -120,11 +123,11 @@ export function LoanStrategy() {
               step={0.01}
               value={form.return_rate}
               onChange={(e) => update("return_rate", Number(e.target.value))}
-              className="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white"
+              className="w-full rounded-xl border border-slate-700/50 bg-slate-900/50 px-4 py-2.5 text-sm text-white focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500/50 transition-colors"
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-slate-300 mb-1">
+            <label className="block text-xs font-semibold text-slate-300 mb-1.5 uppercase tracking-wider">
               Inflation Rate (decimal)
             </label>
             <input
@@ -136,11 +139,11 @@ export function LoanStrategy() {
               onChange={(e) =>
                 update("inflation_rate", Number(e.target.value))
               }
-              className="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white"
+              className="w-full rounded-xl border border-slate-700/50 bg-slate-900/50 px-4 py-2.5 text-sm text-white focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500/50 transition-colors"
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-slate-300 mb-1">
+            <label className="block text-xs font-semibold text-slate-300 mb-1.5 uppercase tracking-wider">
               Current EMI (₹)
             </label>
             <input
@@ -148,11 +151,11 @@ export function LoanStrategy() {
               min={0}
               value={form.loan_emi}
               onChange={(e) => update("loan_emi", Number(e.target.value))}
-              className="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white"
+              className="w-full rounded-xl border border-slate-700/50 bg-slate-900/50 px-4 py-2.5 text-sm text-white focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500/50 transition-colors"
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-slate-300 mb-1">
+            <label className="block text-xs font-semibold text-slate-300 mb-1.5 uppercase tracking-wider">
               Loan Years Remaining
             </label>
             <input
@@ -160,11 +163,11 @@ export function LoanStrategy() {
               min={1}
               value={form.loan_years}
               onChange={(e) => update("loan_years", Number(e.target.value))}
-              className="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white"
+              className="w-full rounded-xl border border-slate-700/50 bg-slate-900/50 px-4 py-2.5 text-sm text-white focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500/50 transition-colors"
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-slate-300 mb-1">
+            <label className="block text-xs font-semibold text-slate-300 mb-1.5 uppercase tracking-wider">
               Loan Interest Rate (%)
             </label>
             <input
@@ -174,13 +177,13 @@ export function LoanStrategy() {
               onChange={(e) =>
                 update("interest_rate_value", Number(e.target.value))
               }
-              className="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white"
+              className="w-full rounded-xl border border-slate-700/50 bg-slate-900/50 px-4 py-2.5 text-sm text-white focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500/50 transition-colors"
             />
           </div>
         </div>
 
         {error && (
-          <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-400">
+          <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
             {error}
           </div>
         )}
@@ -188,68 +191,111 @@ export function LoanStrategy() {
         <button
           type="submit"
           disabled={loading}
-          className="inline-flex items-center rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-emerald-500 disabled:opacity-50"
+          className="inline-flex items-center rounded-xl bg-emerald-500 px-6 py-3 text-sm font-semibold text-slate-950 shadow-sm hover:bg-emerald-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-500 disabled:opacity-50 transition-colors"
         >
           {loading ? "Comparing..." : "Compare Strategy"}
         </button>
       </form>
 
       {result && (
-        <div className="space-y-6">
-          <div className="rounded-xl bg-slate-900/60 border border-slate-800 p-5 text-sm">
-            <h2 className="text-sm font-semibold text-white mb-3">
+        <div className="relative z-10 space-y-6">
+          <div className="glass-card rounded-2xl p-6 shadow-xl">
+            <h2 className="text-lg font-bold text-white mb-6">
               Strategy Result
             </h2>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
               <div>
-                <p className="text-slate-400 text-xs">Current FIRE Year</p>
-                <p className="mt-1 text-lg font-semibold">
+                <p className="text-slate-400 text-xs uppercase tracking-wider font-semibold mb-2">Current FIRE Year</p>
+                <p className="text-3xl font-bold tracking-tight text-white">
                   {result.current_fire_year}
                 </p>
               </div>
               <div>
-                <p className="text-slate-400 text-xs">Optimized FIRE Year</p>
-                <p className="mt-1 text-lg font-semibold text-emerald-400">
+                <p className="text-slate-400 text-xs uppercase tracking-wider font-semibold mb-2">Optimized FIRE Year</p>
+                <p className="text-3xl font-bold tracking-tight text-emerald-400">
                   {result.optimized_fire_year}
                 </p>
               </div>
               <div>
-                <p className="text-slate-400 text-xs">
+                <p className="text-slate-400 text-xs uppercase tracking-wider font-semibold mb-2">
                   Recommended EMI (₹/month)
                 </p>
-                <p className="mt-1 text-lg font-semibold text-cyan-400">
+                <p className="text-3xl font-bold tracking-tight text-cyan-400">
                   {result.recommended_emi.toLocaleString()}
                 </p>
               </div>
               <div>
-                <p className="text-slate-400 text-xs">Recommendation</p>
-                <p className="mt-1 text-sm font-semibold capitalize">
+                <p className="text-slate-400 text-xs uppercase tracking-wider font-semibold mb-2">Recommendation</p>
+                <p className="text-lg font-semibold capitalize text-white mt-2">
                   {result.strategy_recommendation.replace(/_/g, " ")}
                 </p>
               </div>
             </div>
             {result.loan_details && (
-              <p className="mt-4 text-slate-300 text-xs">
-                Original EMI: ₹
-                {result.loan_details.original_emi?.toLocaleString() ?? "—"} →{" "}
-                Optimal EMI: ₹
-                {result.loan_details.optimal_emi?.toLocaleString() ?? "—"} •
-                Interest savings: ₹
-                {result.loan_details.interest_savings?.toLocaleString() ?? "—"}
-              </p>
-            )}
-          </div>
-          {result.ai_explanation &&
-            Object.keys(result.ai_explanation).length > 0 && (
-              <div className="rounded-xl bg-slate-900/60 border border-slate-800 p-5 text-xs text-slate-200">
-                <h2 className="text-sm font-semibold text-white mb-2">
-                  AI Explanation
-                </h2>
-                <pre className="whitespace-pre-wrap">
-                  {JSON.stringify(result.ai_explanation, null, 2)}
-                </pre>
+              <div className="mt-8 pt-6 border-t border-slate-800">
+                <p className="text-slate-300 text-sm flex gap-4">
+                  <span><strong>Original EMI:</strong> ₹{result.loan_details.original_emi?.toLocaleString() ?? "—"}</span>
+                  <span className="text-slate-500">•</span>
+                  <span><strong>Optimal EMI:</strong> ₹{result.loan_details.optimal_emi?.toLocaleString() ?? "—"}</span>
+                  <span className="text-slate-500">•</span>
+                  <span className="text-emerald-400 font-medium"><strong>Interest Savings:</strong> ₹{result.loan_details.interest_savings?.toLocaleString() ?? "—"}</span>
+                </p>
               </div>
             )}
+          </div>
+          {result.ai_explanation && Object.keys(result.ai_explanation).length > 0 && (
+            <div className="glass-card rounded-2xl p-6 shadow-xl relative overflow-hidden">
+              <div className="absolute top-0 left-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-2xl -ml-10 -mt-10 pointer-events-none"></div>
+              <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                <svg className="w-5 h-5 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+                AI Consultant Analysis
+              </h2>
+
+              {/* Parse the AI explanation payload if it's formatted as standard JSON string or object */}
+              <div className="space-y-4 text-sm text-slate-300">
+                {typeof result.ai_explanation === "string" ? (
+                  <p className="leading-relaxed">{result.ai_explanation}</p>
+                ) : (
+                  <div className="space-y-6">
+                    {(result.ai_explanation as any).summary && (
+                      <p className="text-emerald-50 leading-relaxed text-base">{(result.ai_explanation as any).summary}</p>
+                    )}
+
+                    {(result.ai_explanation as any).reasoning_points && Array.isArray((result.ai_explanation as any).reasoning_points) && (
+                      <div>
+                        <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Key Reasoning</h3>
+                        <ul className="space-y-2">
+                          {((result.ai_explanation as any).reasoning_points as string[]).map((point, idx) => (
+                            <li key={idx} className="flex items-start gap-2">
+                              <span className="text-emerald-500 mt-0.5">•</span>
+                              <span className="leading-relaxed">{point}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    {(result.ai_explanation as any).risk_note && (
+                      <div className="p-4 rounded-xl bg-orange-500/10 border border-orange-500/20">
+                        <h3 className="text-xs font-bold text-orange-400 uppercase tracking-wider mb-1">Risk Factors</h3>
+                        <p className="text-orange-200">{(result.ai_explanation as any).risk_note}</p>
+                      </div>
+                    )}
+
+                    {((result.ai_explanation as any).confidence_score !== undefined) && (
+                      <div className="flex justify-end border-t border-slate-800 pt-4">
+                        <div className="text-xs text-slate-500">
+                          AI Confidence Score: <strong className="text-slate-300">{(result.ai_explanation as any).confidence_score}/100</strong>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

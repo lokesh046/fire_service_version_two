@@ -84,7 +84,7 @@ export function HealthHistory() {
                     {r.created_at ? new Date(r.created_at).toLocaleString() : "—"}
                   </td>
                   <td className="px-3 py-2 text-right text-cyan-400">
-                    {r.score}/100
+                    {r.score.toFixed(2)}/100
                   </td>
                   <td className="px-3 py-2 text-right text-emerald-400">
                     ₹{(r.fire_number / 1e6).toFixed(2)}M

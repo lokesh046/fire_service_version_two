@@ -46,8 +46,15 @@ async def startup():
         print(f"[WARNING] Database initialization error: {e}. Retrying on first request...")
 
 
+class ChatMessage(BaseModel):
+    role: str
+    content: str
+
+from typing import Optional, List, Dict, Any
 class ChatRequest(BaseModel):
     message: str
+    history: Optional[List[ChatMessage]] = None
+    state: Optional[Dict[str, Any]] = None
 
 llm_client = LLMClient()
 orchestrator = FinancialOrchestrator(llm_client)
@@ -74,7 +81,15 @@ async def chat_agent(
     
     # Pass auth token to orchestrator for internal service calls
     print(f"DEBUG: Handling chat request: {data.message}")
-    result = await orchestrator.handle_request(data.message, auth_token)
+    
+    history_dict = [h.dict() for h in data.history] if data.history else None
+    
+    result = await orchestrator.handle_request(
+        message=data.message, 
+        auth_token=auth_token,
+        history=history_dict,
+        previous_state_dict=data.state
+    )
     print(f"DEBUG: Orchestrator Result: {result}")
 
     # Save FIRE result if exists

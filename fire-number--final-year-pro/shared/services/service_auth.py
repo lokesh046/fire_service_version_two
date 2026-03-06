@@ -27,6 +27,7 @@ class TokenData(BaseModel):
     """Parsed token data"""
     user_id: Optional[str] = None
     email: Optional[str] = None
+    username: Optional[str] = None
     role: Optional[str] = None
     tenant_id: Optional[str] = None
     exp: Optional[datetime] = None
@@ -35,6 +36,7 @@ class TokenData(BaseModel):
 class CurrentUser(BaseModel):
     """Current authenticated user"""
     id: str
+    username: str = ""
     email: str
     role: str = "user"
     tenant_id: Optional[str] = None
@@ -71,6 +73,7 @@ def decode_token(token: str) -> TokenData:
         
         user_id: Optional[str] = payload.get("sub")
         email: Optional[str] = payload.get("email")
+        username: Optional[str] = payload.get("username", "")
         role: Optional[str] = payload.get("role", "user")
         tenant_id: Optional[str] = payload.get("tenant_id")
         exp: Optional[datetime] = payload.get("exp")
@@ -84,6 +87,7 @@ def decode_token(token: str) -> TokenData:
         return TokenData(
             user_id=user_id,
             email=email,
+            username=username,
             role=role,
             tenant_id=tenant_id,
             exp=exp
@@ -120,6 +124,7 @@ async def get_current_user(
     return CurrentUser(
         id=token_data.user_id,
         email=token_data.email or "",
+        username=token_data.username or "",
         role=token_data.role,
         tenant_id=token_data.tenant_id
     )

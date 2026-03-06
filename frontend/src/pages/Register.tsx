@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { registerUser } from "../api/auth";
 
 export function Register() {
+  const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -14,7 +15,7 @@ export function Register() {
     setError("");
     setLoading(true);
     try {
-      await registerUser({ email, password });
+      await registerUser({ username, email, password });
       navigate("/login");
     } catch (err: unknown) {
       const msg =
@@ -34,30 +35,52 @@ export function Register() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-950 px-4">
-      <div className="w-full max-w-md">
+    <div className="min-h-screen flex items-center justify-center bg-[#020617] relative overflow-hidden px-4">
+      {/* Background ambient glows */}
+      <div className="glow-bg bg-emerald-500 w-[500px] h-[500px] top-[-20%] left-[-10%] mix-blend-screen"></div>
+      <div className="glow-bg bg-blue-500 w-[500px] h-[500px] bottom-[-20%] right-[-10%] mix-blend-screen"></div>
+
+      <div className="relative z-10 w-full max-w-md">
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold text-emerald-400 tracking-tight">
-            Wealth To FIRE
-          </h1>
+          <Link to="/" className="inline-block text-2xl font-bold tracking-tight mb-2">
+            <span className="text-white">Wealth To </span>
+            <span className="text-emerald-400">FIRE</span>
+          </Link>
           <p className="text-slate-400 mt-1 text-sm">
             Create your account to start planning
           </p>
         </div>
         <form
           onSubmit={handleSubmit}
-          className="bg-slate-900/70 border border-slate-800 rounded-xl p-6 shadow-xl space-y-5"
+          className="glass-card rounded-2xl p-8 shadow-2xl space-y-6"
         >
           {error && (
-            <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-sm">
+            <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm text-center">
               {error}
             </div>
           )}
           <div className="space-y-4">
             <div>
               <label
+                htmlFor="username"
+                className="block text-sm font-medium text-slate-300 mb-1.5"
+              >
+                Username
+              </label>
+              <input
+                id="username"
+                type="text"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                required
+                className="w-full rounded-xl border border-slate-700/50 bg-slate-900/50 px-4 py-3 text-sm text-white placeholder-slate-500 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500/50 transition-colors"
+                placeholder="Choose a unique username"
+              />
+            </div>
+            <div>
+              <label
                 htmlFor="email"
-                className="block text-sm font-medium text-slate-200 mb-1"
+                className="block text-sm font-medium text-slate-300 mb-1.5"
               >
                 Email
               </label>
@@ -67,14 +90,14 @@ export function Register() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="w-full rounded-lg border border-slate-700 bg-slate-900 px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
+                className="w-full rounded-xl border border-slate-700/50 bg-slate-900/50 px-4 py-3 text-sm text-white placeholder-slate-500 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500/50 transition-colors"
                 placeholder="you@example.com"
               />
             </div>
             <div>
               <label
                 htmlFor="password"
-                className="block text-sm font-medium text-slate-200 mb-1"
+                className="block text-sm font-medium text-slate-300 mb-1.5"
               >
                 Password
               </label>
@@ -85,7 +108,7 @@ export function Register() {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 minLength={6}
-                className="w-full rounded-lg border border-slate-700 bg-slate-900 px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
+                className="w-full rounded-xl border border-slate-700/50 bg-slate-900/50 px-4 py-3 text-sm text-white placeholder-slate-500 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500/50 transition-colors"
                 placeholder="Min 6 characters"
               />
             </div>
@@ -93,13 +116,13 @@ export function Register() {
           <button
             type="submit"
             disabled={loading}
-            className="mt-2 w-full rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-emerald-500 disabled:opacity-50"
+            className="mt-4 w-full rounded-xl bg-emerald-500 py-3 text-sm font-semibold text-slate-950 shadow-sm hover:bg-emerald-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-500 disabled:opacity-50 transition-colors"
           >
             {loading ? "Creating account..." : "Register"}
           </button>
-          <p className="text-center text-sm text-slate-400">
+          <p className="text-center text-sm text-slate-400 pt-2">
             Already have an account?{" "}
-            <Link to="/login" className="text-emerald-400 hover:underline">
+            <Link to="/login" className="text-emerald-400 font-medium hover:text-emerald-300 hover:underline transition-colors">
               Sign in
             </Link>
           </p>
