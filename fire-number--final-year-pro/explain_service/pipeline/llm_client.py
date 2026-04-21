@@ -2,6 +2,7 @@ import os
 import hashlib
 import json
 import re
+import asyncio
 from dotenv import load_dotenv
 from google import genai
 from google.genai import types
@@ -35,15 +36,25 @@ async def generate_explanation(prompt: str):
             "}"
         )
         
-        response = client.models.generate_content(
-            model=MODEL_NAME,
-            contents=system_instructions + "\n\nUser Prompt: " + prompt,
-            config=types.GenerateContentConfig(
-                temperature=0.3
-            )
-        )
-        
-        raw_output = response.text.strip()
+        raw_output = ""
+        max_retries = 3
+        for attempt in range(max_retries):
+            try:
+                response = await client.aio.models.generate_content(
+                    model=MODEL_NAME,
+                    contents=system_instructions + "\n\nUser Prompt: " + prompt,
+                    config=types.GenerateContentConfig(
+                        temperature=0.3
+                    )
+                )
+                raw_output = response.text.strip()
+                break
+            except Exception as e:
+                if attempt < max_retries - 1:
+                    print(f"LLM Exception: {str(e)}. Retrying {attempt+1}/{max_retries}...")
+                    await asyncio.sleep(2 ** attempt)
+                else:
+                    raise e
         
         if raw_output.startswith("```"):
             raw_output = re.sub(r"^```json", "", raw_output)
@@ -108,3 +119,27 @@ def _fallback_response():
         "reasoning_points": [],
         "risk_note": ""
     }
+
+async def generate_raw_text(prompt: str) -> str:
+    """
+    Calls Gemini and returns raw text output for general Q&A.
+    """
+    try:
+        client = genai.Client(api_key=GEMINI_API_KEY)
+        max_retries = 3
+        for attempt in range(max_retries):
+            try:
+                response = await client.aio.models.generate_content(
+                    model=MODEL_NAME,
+                    contents=prompt,
+                )
+                return response.text.strip()
+            except Exception as e:
+                if attempt < max_retries - 1:
+                    print(f"LLM Exception in raw text: {str(e)}. Retrying {attempt+1}/{max_retries}...")
+                    await asyncio.sleep(2 ** attempt)
+                else:
+                    raise e
+    except Exception as e:
+        print("LLM Exception in raw text:", str(e))
+        return "Sorry, I'm having trouble analyzing the financial documents right now. Please try again later."

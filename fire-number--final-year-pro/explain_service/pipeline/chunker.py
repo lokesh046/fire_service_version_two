@@ -1,4 +1,4 @@
-def chunk_text(text, chunk_size=200):
+def chunk_text(text, chunk_size=1000):
     sentences = text.split(". ")
     chunks = []
     current_chunk = ""

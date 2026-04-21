@@ -31,3 +31,17 @@ Financial Health Score: {data.financial_health_score}
 Relevant Financial Knowledge:
 {context}
 """
+
+def build_qa_prompt(context: str, query: str) -> str:
+    return f"""You are a helpful and knowledgeable financial advisor building a "Second Brain" for the user.
+Answer the user's question, prioritizing the knowledge provided in the context below. 
+If the exact answer or details are missing from the context, you may use your general financial expertise to provide a complete, helpful context-aware response, but make sure to distinguish what comes from the documents vs. general principles.
+Keep it concise, helpful, and professional.
+
+Context:
+{context}
+
+Question:
+{query}
+
+Answer:"""

@@ -19,12 +19,20 @@ from shared.services.health_service import save_health_score
 from shared.services.loan_service import save_loan_simulation
 import shared.models
 from fastapi.middleware.cors import CORSMiddleware
+
+# Internal Service Imports
+from fire_service.fire_engine import calculate_fire_plan
+from health_service.financial_health_score import calculate_financial_health_score
+from loan_optimzer_service.loan_engine import calculate_emi, generate_amortization_schedule, suggest_optimal_emi, normalize_interest_rate
+from chat_service.main import router as chat_router
+from explain_service.main import router as explain_router
+
 app = FastAPI(
     title="Wealth To FIRE Gateway (Async)",
     description="API Gateway for Financial Planning Microservices"
 )
 
-app.include_router(auth_router, prefix="/auth", tags=["Authentication"])
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
@@ -37,6 +45,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.include_router(auth_router, prefix="/auth", tags=["Authentication"])
+app.include_router(chat_router, tags=["Chat"])
+app.include_router(explain_router, tags=["Explain"])
 
 @app.on_event("startup")
 async def startup():
@@ -186,145 +197,6 @@ async def dev_promote_to_admin(email: str, db_session=Depends(get_db)):
         return {"error": str(e)}
 
 # ============================================================
-# EXPLAIN SERVICE ADMIN PROXIES (RAG DB)
-# ============================================================
-
-EXPLAIN_SERVICE_URL = "http://localhost:8005"
-# The backend explain service requires an ADMIN_API_KEY header.
-EXPLAIN_ADMIN_KEY = os.getenv("ADMIN_API_KEY", "super_secret_key_change_me")
-
-@app.post("/admin/upload")
-async def admin_upload_gateway(
-    file: UploadFile = File(...),
-    user: CurrentUser = Depends(require_auth)
-):
-    if user.role != "admin":
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Admin access required"
-        )
-    
-    try:
-        file_bytes = await file.read()
-        async with httpx.AsyncClient() as client:
-            # We need to forward the file to the explain service as multipart/form-data
-            files = {'file': (file.filename, file_bytes, file.content_type)}
-            headers = {"api-key": EXPLAIN_ADMIN_KEY}
-            
-            response = await client.post(
-                f"{EXPLAIN_SERVICE_URL}/admin/upload",
-                files=files,
-                headers=headers,
-                timeout=60.0
-            )
-            
-            if response.status_code != 200:
-                raise HTTPException(
-                    status_code=response.status_code,
-                    detail=f"Downstream error: {response.text}"
-                )
-            return response.json()
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-@app.delete("/admin/delete")
-async def admin_delete_gateway(
-    source: str,
-    user: CurrentUser = Depends(require_auth)
-):
-    if user.role != "admin":
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Admin access required"
-        )
-        
-    async with httpx.AsyncClient() as client:
-        headers = {"api-key": EXPLAIN_ADMIN_KEY}
-        
-        response = await client.delete(
-            f"{EXPLAIN_SERVICE_URL}/admin/delete",
-            params={"source": source},
-            headers=headers,
-            timeout=30.0
-        )
-        
-        if response.status_code != 200:
-            raise HTTPException(
-                status_code=response.status_code,
-                detail=f"Downstream error: {response.text}"
-            )
-        return response.json()
-
-# ============================================================
-# CHAT AGENT ENDPOINT
-# ============================================================
-
-class ChatMessage(BaseModel):
-    role: str
-    content: str
-    
-class ChatRequest(BaseModel):
-    message: str
-    history: Optional[list[ChatMessage]] = None
-    state: Optional[dict] = None
-
-
-@app.post("/chat-agent")
-async def chat_agent(
-    data: ChatRequest,
-    user: CurrentUser = Depends(require_auth),
-    authorization: Optional[str] = Header(None),
-    access_token: Optional[str] = Cookie(None),
-    db_session = Depends(get_db),
-):
-    """Chat with AI Financial Advisor"""
-    headers = get_auth_headers(authorization, access_token)
-
-    async with httpx.AsyncClient() as client:
-        try:
-            payload = {"message": data.message}
-            if data.history is not None:
-                payload["history"] = [h.dict() for h in data.history]
-            if data.state is not None:
-                payload["state"] = data.state
-                
-            response = await client.post(
-                "http://localhost:5006/chat-agent",  # Chat service on port 5006
-                json=payload,
-                headers=headers,
-                timeout=60.0
-            )
-            
-            if response.status_code == 200:
-                result = response.json()
-                
-                # Save FIRE calculation if exists
-                if result.get("state", {}).get("fire_number"):
-                    try:
-                        await save_fire_calculation(
-                            db=db_session,
-                            user_id=uuid.UUID(user.id),
-                            monthly_income=result["state"].get("monthly_income", 0),
-                            living_expense=result["state"].get("living_expense", 0),
-                            current_savings=result["state"].get("current_savings", 0),
-                            fire_number=result["state"].get("fire_number", 0),
-                            fire_year=result["state"].get("fire_year", 0),
-                            final_wealth=result["state"].get("final_wealth", 0)
-                        )
-                    except Exception as e:
-                        print(f"Error saving fire: {e}")
-                
-                return result
-            else:
-                return {"error": "Chat service failed", "details": response.text}
-                
-        except Exception as e:
-            return {"error": "Chat service unavailable", "details": str(e)}
-
-
-# ============================================================
 # PROTECTED ENDPOINTS - Auto-auth via cookie or header
 # ============================================================
 
@@ -337,47 +209,34 @@ async def calculate_fire(
     db_session = Depends(get_db)
 ):
     """
-    Calculate FIRE - works with token in header OR cookie
-    After login, just call this endpoint - token is automatic!
+    Calculate FIRE - monolithic local call
     """
-    headers = get_auth_headers(authorization, access_token)
+    # 1. Local FIRE calculation
+    fire_result = calculate_fire_plan(
+        monthly_income=data.monthly_income,
+        living_expense=data.living_expense,
+        current_savings=data.current_savings,
+        return_rate=data.return_rate,
+        inflation_rate=data.inflation_rate,
+        has_loan=(str(data.has_loan).lower() == "yes"),
+        loan_emi=data.loan_emi,
+        loan_years=data.loan_years
+    )
+    
+    if isinstance(fire_result["fire_year"], str):
+        return {"error": "FIRE service failed", "details": fire_result["fire_year"]}
 
-    async with httpx.AsyncClient() as client:
+    # 2. Local Health calculation
+    health_score = calculate_financial_health_score(
+        monthly_income=data.monthly_income,
+        living_expense=data.living_expense,
+        loan_emi=data.loan_emi,
+        current_savings=data.current_savings,
+        fire_number=fire_result["fire_number"],
+        has_insurance=str(data.has_insurance).lower()
+    )
 
-        fire_response = await client.post(
-            "http://localhost:8001/fire",
-            json=data.dict(),
-            headers=headers,
-            timeout=30.0
-        )
-
-        if fire_response.status_code != 200:
-            print("FIRE SERVICE FAILED:", fire_response.text)
-            return {"error": "FIRE service failed", "details": fire_response.text}
-
-        fire_data = fire_response.json()
-        print("FIRE SERVICE SUCCESS:", fire_data)
-
-        health_response = await client.post(
-            "http://localhost:8002/health-score",
-            json={
-                "monthly_income": data.monthly_income,
-                "living_expense": data.living_expense,
-                "loan_emi": data.loan_emi,
-                "current_savings": data.current_savings,
-                "fire_number": fire_data["fire_number"],
-                "has_insurance": data.has_insurance
-            },
-            headers=headers,
-            timeout=30.0
-        )
-
-        if health_response.status_code != 200:
-            return {"error": "Health service failed", "details": health_response.text}
-
-        health_data = health_response.json()
-
-    # Save FIRE calculation to database
+    # Save to database
     try:
         await save_fire_calculation(
             db=db_session,
@@ -385,24 +244,22 @@ async def calculate_fire(
             monthly_income=data.monthly_income,
             living_expense=data.living_expense,
             current_savings=data.current_savings,
-            fire_number=fire_data["fire_number"],
-            fire_year=fire_data["fire_year"],
-            final_wealth=fire_data["final_wealth"],
+            fire_number=fire_result["fire_number"],
+            fire_year=fire_result["fire_year"],
+            final_wealth=fire_result["final_wealth"],
             scenario_name=data.scenario_name
         )
     except Exception as e:
         print(f"Error saving fire calculation: {e}")
 
-    # Save Health score to database
     try:
         debt_ratio = data.loan_emi / data.monthly_income if data.monthly_income > 0 else 0
         savings_ratio = data.current_savings / data.monthly_income if data.monthly_income > 0 else 0
-        
         await save_health_score(
             db=db_session,
             user_id=uuid.UUID(user.id),
-            score=health_data["financial_health_score"],
-            fire_number=fire_data["fire_number"],
+            score=health_score,
+            fire_number=fire_result["fire_number"],
             debt_ratio=debt_ratio,
             savings_ratio=savings_ratio
         )
@@ -410,14 +267,13 @@ async def calculate_fire(
         print(f"Error saving health score: {e}")
 
     return {
-        "fire_number": fire_data["fire_number"],
-        "fire_year": fire_data["fire_year"],
-        "final_wealth": fire_data["final_wealth"],
-        "financial_health_score": health_data["financial_health_score"],
+        "fire_number": fire_result["fire_number"],
+        "fire_year": fire_result["fire_year"],
+        "final_wealth": fire_result["final_wealth"],
+        "financial_health_score": health_score,
         "user_id": user.id,
         "saved": True
     }
-
 
 @app.post("/loan-fire-strategy")
 async def compare_loan_vs_fire(
@@ -427,141 +283,115 @@ async def compare_loan_vs_fire(
     access_token: Optional[str] = Cookie(None),
     db_session = Depends(get_db)
 ):
-    """Compare loan vs FIRE strategy - automatic auth"""
-    headers = get_auth_headers(authorization, access_token)
+    """Compare loan vs FIRE strategy - monolithic"""
+    
+    # 1. Current FIRE
+    fire_current_result = calculate_fire_plan(
+        monthly_income=data.monthly_income,
+        living_expense=data.living_expense,
+        current_savings=data.current_savings,
+        return_rate=data.return_rate,
+        inflation_rate=data.inflation_rate,
+        has_loan=(str(data.has_loan).lower() == "yes"),
+        loan_emi=data.loan_emi,
+        loan_years=data.loan_years
+    )
+    
+    current_year = fire_current_result.get("fire_year", 0)
 
-    async with httpx.AsyncClient() as client:
-
-        # Calculate current FIRE
-        fire_current = await client.post(
-            "http://localhost:8001/fire",
-            json=data.dict(),
-            headers=headers,
-            timeout=30.0
+    if str(data.has_loan).lower() == "no" or data.loan_amount <= 0:
+        recommended_emi = 0
+        optimized_year = current_year
+        strategy = "no_loan"
+        fire_optimized_result = fire_current_result
+        math_optimal_emi = 0
+        loan_savings = 0
+        original_emi = 0
+    else:
+        # Local loan optimization
+        annual_rate = normalize_interest_rate(data.interest_rate_value, data.rate_type)
+        optimization = suggest_optimal_emi(data.loan_amount, annual_rate, data.loan_years or 1)
+        original_emi = calculate_emi(data.loan_amount, annual_rate, data.loan_years or 1)
+        
+        math_optimal_emi = optimization["recommended_option"]["emi"]
+        loan_savings = (
+            generate_amortization_schedule(data.loan_amount, annual_rate, original_emi)["total_interest_paid"] -
+            optimization["recommended_option"]["total_interest_paid"]
         )
 
-        if fire_current.status_code != 200:
-            return {"error": "FIRE service failed", "details": fire_current.text}
+        # Calculate optimized FIRE
+        fire_optimized_result = calculate_fire_plan(
+            monthly_income=data.monthly_income,
+            living_expense=data.living_expense,
+            current_savings=data.current_savings,
+            return_rate=data.return_rate,
+            inflation_rate=data.inflation_rate,
+            has_loan=True,
+            loan_emi=math_optimal_emi,
+            loan_years=data.loan_years
+        )
+        
+        optimized_year = fire_optimized_result.get("fire_year", 0)
+        curr_y = current_year if isinstance(current_year, (int, float)) else 999
+        opt_y = optimized_year if isinstance(optimized_year, (int, float)) else 999
+        
+        strategy = "increase_emi" if (opt_y < curr_y and opt_y > 0) else "keep_current_emi"
+        recommended_emi = math_optimal_emi if strategy == "increase_emi" else original_emi
 
-        fire_current_data = fire_current.json()
-        current_year = fire_current_data.get("fire_year", 0)
+    # Calculate health score locally
+    health_score = calculate_financial_health_score(
+        monthly_income=data.monthly_income,
+        living_expense=data.living_expense,
+        loan_emi=recommended_emi if strategy == "increase_emi" else (original_emi if original_emi > 0 else data.loan_emi),
+        current_savings=data.current_savings,
+        fire_number=fire_optimized_result.get("fire_number", 0),
+        has_insurance=str(data.has_insurance).lower()
+    )
 
-        if data.has_loan == "no" or data.loan_amount <= 0:
-            loan_data = {}
-            recommended_emi = 0
-            optimized_year = current_year
-            strategy = "no_loan"
-            fire_optimized_data = fire_current_data
-        else:
-            # Calculate loan
-            loan_response = await client.post(
-                "http://localhost:8004/loan-analysis",
-                json={
-                    "loan_amount": data.loan_amount,
-                    "interest_rate_value": data.interest_rate_value,
-                    "rate_type": "annual",
-                    "tenure_years": data.loan_years or 1
-                },
-                headers=headers,
-                timeout=30.0
-            )
-
-            if loan_response.status_code != 200:
-                print("FAILED LOAN RES", loan_response.text)
-                return {"error": "Loan service failed", "details": loan_response.text}
-
-            loan_data = loan_response.json()
-            math_optimal_emi = loan_data.get("optimal_emi_suggestions", {}).get("recommended_option", {}).get("emi", 0)
-
-            # Calculate optimized FIRE with math optimal EMI
-            modified_data = data.dict()
-            modified_data["loan_emi"] = math_optimal_emi
-
-            fire_optimized = await client.post(
-                "http://localhost:8001/fire",
-                json=modified_data,
-                headers=headers,
-                timeout=30.0
-            )
-
-            if fire_optimized.status_code != 200:
-                return {"error": "FIRE service failed", "details": fire_optimized.text}
-
-            fire_optimized_data = fire_optimized.json()
-            optimized_year = fire_optimized_data.get("fire_year", 0)
-            
-            # Extract integers to compare
-            curr_y = current_year if isinstance(current_year, (int, float)) else 999
-            opt_y = optimized_year if isinstance(optimized_year, (int, float)) else 999
-            
-            strategy = (
-                "increase_emi"
-                if opt_y < curr_y and opt_y > 0
-                else "keep_current_emi"
-            )
-
-            # Define the actual recommended EMI based on the strategy chosen
-            recommended_emi = math_optimal_emi if strategy == "increase_emi" else data.loan_emi
-
-        # Calculate actual health score to pass to explain service
-        health_score = 70.0
-        try:
-            health_response = await client.post(
-                "http://localhost:8002/health-score",
-                json={
-                    "monthly_income": data.monthly_income,
-                    "living_expense": data.living_expense,
-                    "loan_emi": recommended_emi if strategy == "increase_emi" else data.loan_emi,
-                    "current_savings": data.current_savings,
-                    "fire_number": fire_optimized_data.get("fire_number", 0),
-                    "has_insurance": data.has_insurance
-                },
-                headers=headers,
-                timeout=10.0
-            )
-            if health_response.status_code == 200:
-                health_score = health_response.json().get("financial_health_score", 70.0)
-        except Exception as e:
-            print("Error fetching health score for explanation:", e)
-            
-        # Try explain service (optional)
-        ai_explanation = {}
-        try:
-            explain_response = await client.post(
-                f"{EXPLAIN_SERVICE_URL}/explain-strategy",
-                json={
-                    "context_type": "loan_fire_strategy",
-                    "current_fire_year": current_year,
-                    "optimized_fire_year": optimized_year,
-                    "recommended_emi": recommended_emi,
-                    "strategy_recommendation": strategy,
-                    "financial_health_score": health_score
-                },
-                headers=headers,
-                timeout=30.0
-            )
-            
-            if explain_response.status_code == 200:
-                ai_explanation = explain_response.json()
-        except Exception:
-            pass  # Ignore if explain service is not available
-
-    # Save FIRE calculations
+    ai_explanation = {}
     try:
-        if fire_current_data.get("status") == "success":
+        from explain_service.pipeline.retrieval import retrieve
+        from explain_service.pipeline.prompt_builder import build_prompt
+        from explain_service.pipeline.llm_client import generate_explanation
+        from explain_service.main import ExplainRequest
+        
+        req_data = ExplainRequest(
+            context_type="loan_fire_strategy",
+            current_fire_year=int(current_year) if isinstance(current_year, (int, float)) else 0,
+            optimized_fire_year=int(optimized_year) if isinstance(optimized_year, (int, float)) else 0,
+            recommended_emi=recommended_emi,
+            strategy_recommendation=strategy,
+            financial_health_score=health_score
+        )
+        query = f"{strategy} fire timeline debt impact"
+        context, sources, confidence = retrieve(query)
+        prompt = build_prompt(context, req_data)
+        explanation_structured = await generate_explanation(prompt)
+        
+        ai_explanation = {
+            **explanation_structured,
+            "sources": sources,
+            "confidence_score": confidence
+        }
+    except Exception as e:
+        print("Error fetching AI explanation:", e)
+
+    # Save to DB
+    if not isinstance(current_year, str):
+        try:
             await save_fire_calculation(
                 db=db_session,
                 user_id=uuid.UUID(user.id),
                 monthly_income=data.monthly_income,
                 living_expense=data.living_expense,
                 current_savings=data.current_savings,
-                fire_number=fire_current_data.get("fire_number", 0),
-                fire_year=fire_current_data.get("fire_year", 0),
-                final_wealth=fire_current_data.get("final_wealth", 0),
+                fire_number=fire_current_result.get("fire_number", 0),
+                fire_year=fire_current_result.get("fire_year", 0),
+                final_wealth=fire_current_result.get("final_wealth", 0),
                 scenario_name=data.scenario_name
             )
-    except Exception as e:
-        print(f"Error saving fire: {e}")
+        except Exception as e:
+            print(f"Error saving fire: {e}")
 
     return {
         "current_fire_year": current_year,
@@ -570,13 +400,12 @@ async def compare_loan_vs_fire(
         "strategy_recommendation": strategy,
         "ai_explanation": ai_explanation,
         "loan_details": {
-            "original_emi": data.loan_emi,
+            "original_emi": data.loan_emi if original_emi == 0 else original_emi,
             "optimal_emi": math_optimal_emi if strategy == "keep_current_emi" else recommended_emi,
-            "interest_savings": loan_data.get("total_interest_paid", 0) - loan_data.get("optimal_emi_suggestions", {}).get("recommended_option", {}).get("total_interest_paid", 0)
+            "interest_savings": loan_savings
         },
         "user_id": user.id
     }
-
 
 @app.post("/loan-only")
 async def loan_only(
@@ -585,18 +414,22 @@ async def loan_only(
     authorization: Optional[str] = Header(None),
     access_token: Optional[str] = Cookie(None)
 ):
-    """Loan analysis - automatic auth"""
-    headers = get_auth_headers(authorization, access_token)
-
-    async with httpx.AsyncClient() as client:
-        response = await client.post(
-            "http://localhost:8004/loan-analysis",
-            json=data.dict(),
-            headers=headers,
-            timeout=30.0
-        )
-        return response.json()
-
+    """Loan analysis - monolithic"""
+    annual_rate = normalize_interest_rate(data.interest_rate_value, data.rate_type)
+    emi = calculate_emi(data.loan_amount, annual_rate, data.tenure_years)
+    amortization = generate_amortization_schedule(data.loan_amount, annual_rate, emi)
+    optimization = suggest_optimal_emi(data.loan_amount, annual_rate, data.tenure_years)
+    
+    return {
+        "calculated_emi": emi,
+        "months_to_payoff": amortization["months_to_payoff"],
+        "total_interest_paid": amortization["total_interest_paid"],
+        "optimal_emi_suggestions": {
+            "emi_options": optimization["emi_options"],
+            "recommended_option": optimization["recommended_option"]
+        },
+        "user_id": user.id
+    }
 
 @app.get("/me")
 async def get_current_user_info(
@@ -696,142 +529,131 @@ async def logout(response: Response):
 async def fire_direct(
     data: FinanceInput,
     user: CurrentUser = Depends(require_auth),
-    authorization: Optional[str] = Header(None),
-    access_token: Optional[str] = Cookie(None),
     db_session = Depends(get_db)
 ):
     """Direct FIRE calculation - saves to database"""
-    headers = get_auth_headers(authorization, access_token)
+    result = calculate_fire_plan(
+        monthly_income=data.monthly_income,
+        living_expense=data.living_expense,
+        current_savings=data.current_savings,
+        return_rate=data.return_rate,
+        inflation_rate=data.inflation_rate,
+        has_loan=(str(data.has_loan).lower() == "yes"),
+        loan_emi=data.loan_emi,
+        loan_years=data.loan_years
+    )
+    
+    if not isinstance(result["fire_year"], str):
+        try:
+            await save_fire_calculation(
+                db=db_session,
+                user_id=uuid.UUID(user.id),
+                monthly_income=data.monthly_income,
+                living_expense=data.living_expense,
+                current_savings=data.current_savings,
+                fire_number=result.get("fire_number", 0),
+                fire_year=result.get("fire_year", 0),
+                final_wealth=result.get("final_wealth", 0),
+                scenario_name=data.scenario_name
+            )
+        except Exception:
+            pass
 
-    async with httpx.AsyncClient() as client:
-        response = await client.post(
-            "http://localhost:8001/fire",
-            json=data.dict(),
-            headers=headers,
-            timeout=30.0
-        )
-        
-        if response.status_code == 200:
-            fire_data = response.json()
+        try:
+            health_score = calculate_financial_health_score(
+                monthly_income=data.monthly_income,
+                living_expense=data.living_expense,
+                loan_emi=data.loan_emi,
+                current_savings=data.current_savings,
+                fire_number=result["fire_number"],
+                has_insurance=str(data.has_insurance).lower()
+            )
+            debt_ratio = data.loan_emi / data.monthly_income if data.monthly_income > 0 else 0
+            savings_ratio = data.current_savings / data.monthly_income if data.monthly_income > 0 else 0
             
-            # Only save if successful
-            if fire_data.get("status") == "success" and fire_data.get("fire_year", 0) > 0:
-                try:
-                    await save_fire_calculation(
-                        db=db_session,
-                        user_id=uuid.UUID(user.id),
-                        monthly_income=data.monthly_income,
-                        living_expense=data.living_expense,
-                        current_savings=data.current_savings,
-                        fire_number=fire_data.get("fire_number", 0),
-                        fire_year=fire_data.get("fire_year", 0),
-                        final_wealth=fire_data.get("final_wealth", 0),
-                        scenario_name=data.scenario_name
-                    )
-                except Exception as e:
-                    print(f"Error saving fire calculation: {e}")
-            
-            # Also calculate and save health score if successful
-            if fire_data.get("status") == "success":
-                try:
-                    health_response = await client.post(
-                        "http://localhost:8002/health-score",
-                        json={
-                            "monthly_income": data.monthly_income,
-                            "living_expense": data.living_expense,
-                            "loan_emi": data.loan_emi,
-                            "current_savings": data.current_savings,
-                            "fire_number": fire_data.get("fire_number", 0),
-                            "has_insurance": data.has_insurance
-                        },
-                        headers=headers,
-                        timeout=30.0
-                    )
-                    
-                    if health_response.status_code == 200:
-                        health_data = health_response.json()
-                        debt_ratio = data.loan_emi / data.monthly_income if data.monthly_income > 0 else 0
-                        savings_ratio = data.current_savings / data.monthly_income if data.monthly_income > 0 else 0
-                        
-                        await save_health_score(
-                            db=db_session,
-                            user_id=uuid.UUID(user.id),
-                            score=health_data.get("financial_health_score", 0),
-                            fire_number=fire_data.get("fire_number", 0),
-                            debt_ratio=debt_ratio,
-                            savings_ratio=savings_ratio
-                        )
-                except Exception as e:
-                    print(f"Error saving health score: {e}")
-        
-        return response.json()
+            await save_health_score(
+                db=db_session,
+                user_id=uuid.UUID(user.id),
+                score=health_score,
+                fire_number=result["fire_number"],
+                debt_ratio=debt_ratio,
+                savings_ratio=savings_ratio
+            )
+        except Exception:
+            pass
+
+    return {
+        "fire_number": result["fire_number"],
+        "fire_year": result["fire_year"],
+        "final_wealth": result["final_wealth"],
+        "status": "success" if not isinstance(result["fire_year"], str) else "error"
+    }
 
 
 @app.post("/health")
 async def health_direct(
     data: FinanceInput,
-    user: CurrentUser = Depends(require_auth),
-    authorization: Optional[str] = Header(None),
-    access_token: Optional[str] = Cookie(None)
+    user: CurrentUser = Depends(require_auth)
 ):
     """Direct health score calculation"""
-    headers = get_auth_headers(authorization, access_token)
-
-    async with httpx.AsyncClient() as client:
-        response = await client.post(
-            "http://localhost:8002/health-score",
-            json={
-                "monthly_income": data.monthly_income,
-                "living_expense": data.living_expense,
-                "loan_emi": data.loan_emi,
-                "current_savings": data.current_savings,
-                "fire_number": 1500000,
-                "has_insurance": data.has_insurance
-            },
-            headers=headers,
-            timeout=30.0
-        )
-        return response.json()
+    score = calculate_financial_health_score(
+        monthly_income=data.monthly_income,
+        living_expense=data.living_expense,
+        loan_emi=data.loan_emi,
+        current_savings=data.current_savings,
+        fire_number=1500000, # Mock as old code did
+        has_insurance=str(data.has_insurance).lower()
+    )
+    
+    grade = "A" if score >= 80 else "B" if score >= 60 else "C" if score >= 40 else "D"
+    
+    return {
+        "financial_health_score": score,
+        "user_id": user.id,
+        "grade": grade,
+        "breakdown": {
+            "savings_ratio": (data.current_savings / data.monthly_income) if data.monthly_income > 0 else 0,
+            "debt_ratio": (data.loan_emi / data.monthly_income) if data.monthly_income > 0 else 0
+        }
+    }
 
 
 @app.post("/loan")
 async def loan_direct(
     data: LoanOnlyInput,
     user: CurrentUser = Depends(require_auth),
-    authorization: Optional[str] = Header(None),
-    access_token: Optional[str] = Cookie(None),
     db_session = Depends(get_db)
 ):
     """Direct loan analysis - saves to database"""
-    headers = get_auth_headers(authorization, access_token)
-
-    async with httpx.AsyncClient() as client:
-        response = await client.post(
-            "http://localhost:8004/loan-analysis",
-            json=data.dict(),
-            headers=headers,
-            timeout=30.0
+    annual_rate = normalize_interest_rate(data.interest_rate_value, data.rate_type)
+    emi = calculate_emi(data.loan_amount, annual_rate, data.tenure_years)
+    amortization = generate_amortization_schedule(data.loan_amount, annual_rate, emi)
+    optimization = suggest_optimal_emi(data.loan_amount, annual_rate, data.tenure_years)
+    
+    try:
+        recommended_emi = optimization["recommended_option"]["emi"]
+        await save_loan_simulation(
+            db=db_session,
+            user_id=uuid.UUID(user.id),
+            loan_amount=data.loan_amount,
+            interest_rate=data.interest_rate_value,
+            tenure_years=data.tenure_years,
+            optimal_emi=recommended_emi,
+            total_interest=amortization["total_interest_paid"]
         )
-        
-        if response.status_code == 200:
-            loan_data = response.json()
-            
-            # Save to database
-            try:
-                recommended = loan_data.get("optimal_emi_suggestions", {}).get("recommended_option", {})
-                await save_loan_simulation(
-                    db=db_session,
-                    user_id=uuid.UUID(user.id),
-                    loan_amount=data.loan_amount,
-                    interest_rate=data.interest_rate_value,
-                    tenure_years=data.tenure_years,
-                    optimal_emi=recommended.get("emi", loan_data.get("calculated_emi", 0)),
-                    total_interest=loan_data.get("total_interest_paid", 0)
-                )
-            except Exception as e:
-                print(f"Error saving loan simulation: {e}")
-        
-        return response.json()
+    except Exception as e:
+        print(f"Error saving loan simulation: {e}")
+
+    return {
+        "calculated_emi": emi,
+        "months_to_payoff": amortization["months_to_payoff"],
+        "total_interest_paid": amortization["total_interest_paid"],
+        "optimal_emi_suggestions": {
+            "emi_options": optimization["emi_options"],
+            "recommended_option": optimization["recommended_option"]
+        },
+        "user_id": user.id
+    }
 
 
 @app.get("/loan/history")

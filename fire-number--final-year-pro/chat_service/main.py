@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Depends, Request
+from fastapi import APIRouter, Depends, Request
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -16,34 +16,7 @@ from shared.models.user import User
 from shared.services.dashboard_routes import router as dashboard_router
 
 
-from fastapi.middleware.cors import CORSMiddleware
-
-app = FastAPI(title="AI Financial Planning Platform")
-
-# Configure CORS
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],  # Frontend URL
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-# Include Auth Routes
-app.include_router(auth_router, prefix="/auth", tags=["Authentication"])
-app.include_router(dashboard_router, tags=["Dashboard"])
-
-
-@app.on_event("startup")
-async def startup():
-    try:
-        async with engine.begin() as conn:
-            await conn.run_sync(Base.metadata.create_all)
-        print("[SUCCESS] Database connection established and tables created")
-    except TimeoutError:
-        print("[WARNING] Could not connect to database during startup. Retrying on first request...")
-    except Exception as e:
-        print(f"[WARNING] Database initialization error: {e}. Retrying on first request...")
+# Database logic has been moved to main gateway
 
 
 class ChatMessage(BaseModel):
@@ -56,11 +29,13 @@ class ChatRequest(BaseModel):
     history: Optional[List[ChatMessage]] = None
     state: Optional[Dict[str, Any]] = None
 
+router = APIRouter(tags=["Chat Agent"])
+
 llm_client = LLMClient()
 orchestrator = FinancialOrchestrator(llm_client)
 
 
-@app.post("/chat-agent")
+@router.post("/chat-agent")
 async def chat_agent(
     data: ChatRequest,
     request: Request,
@@ -92,26 +67,29 @@ async def chat_agent(
     )
     print(f"DEBUG: Orchestrator Result: {result}")
 
-    # Save FIRE result if exists
-    if result.get("state", {}).get("fire_number") is not None:
-
-        await save_fire_calculation(
-            db=db,
-            user_id=current_user.id,
-            monthly_income=result["state"].get("monthly_income"),
-            living_expense=result["state"].get("living_expense"),
-            current_savings=result["state"].get("current_savings"),
-            fire_number=result["state"].get("fire_number"),
-            fire_year=result["state"].get("fire_year"),
-            final_wealth=result["state"].get("final_wealth")
-        )
+    # Save FIRE result if exists and is valid
+    fire_year = result.get("state", {}).get("fire_year")
+    if result.get("state", {}).get("fire_number") is not None and not isinstance(fire_year, str):
+        try:
+            await save_fire_calculation(
+                db=db,
+                user_id=current_user.id,
+                monthly_income=result["state"].get("monthly_income"),
+                living_expense=result["state"].get("living_expense"),
+                current_savings=result["state"].get("current_savings"),
+                fire_number=result["state"].get("fire_number"),
+                fire_year=fire_year,
+                final_wealth=result["state"].get("final_wealth")
+            )
+        except Exception as e:
+            print(f"Error saving chat FIRE result: {e}")
 
     return result
 
 
 
-@app.get("/health/db")
+@router.get("/health/db")
 async def db_health(db: AsyncSession = Depends(get_db)):
     from sqlalchemy import text
     result = await db.execute(text("SELECT 1"))
-    return {"database": "connected", "result": result.scalar()}
+    return {"database": "connected", "result": result.scalar()}

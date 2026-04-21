@@ -1,4 +1,4 @@
-from fastapi import FastAPI, UploadFile, File, Header, HTTPException, Depends, status
+from fastapi import APIRouter, UploadFile, File, Header, HTTPException, Depends, status
 from pydantic import BaseModel
 from typing import Literal, Optional
 import os
@@ -11,10 +11,8 @@ from .pipeline.vectordb import collection
 from .pipeline.llm_client import generate_explanation
 from shared.services.service_auth import get_current_user, CurrentUser
 
-app = FastAPI(
-    title="Explain Service",
-    description="AI-Powered Financial Strategy Explanation Service"
-)
+router = APIRouter(tags=["Explain Service"])
+
 
 ADMIN_API_KEY = os.getenv("ADMIN_API_KEY", "super_secret_key_change_me")
 UPLOAD_DIR = "uploads"
@@ -34,6 +32,14 @@ class ExplainResponse(BaseModel):
     summary: str
     reasoning_points: list[str]
     risk_note: str
+    sources: list[str]
+    confidence_score: float
+
+class AskRequest(BaseModel):
+    query: str
+
+class AskResponse(BaseModel):
+    answer: str
     sources: list[str]
     confidence_score: float
 
@@ -81,7 +87,7 @@ def verify_user_or_admin(
     )
 
 
-@app.post("/explain-strategy", response_model=ExplainResponse)
+@router.post("/explain-strategy", response_model=ExplainResponse)
 async def explain_strategy(
     data: ExplainRequest,
     user: CurrentUser = Depends(verify_user_or_admin)
@@ -113,12 +119,50 @@ async def explain_strategy(
 
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_DETAIL,
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error generating explanation: {str(e)}"
         )
 
+@router.post("/ask", response_model=AskResponse)
+async def ask_question(
+    data: AskRequest,
+    user: CurrentUser = Depends(verify_user_or_admin)
+):
+    """
+    RAG-powered Financial Second Brain Q&A.
+    """
+    if not user.is_active and user.role != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="User account is inactive"
+        )
 
-@app.post("/admin/upload")
+    try:
+        from .pipeline.prompt_builder import build_qa_prompt
+        from .pipeline.llm_client import generate_raw_text
+        
+        context, sources, confidence = retrieve(data.query)
+        prompt = build_qa_prompt(context, data.query)
+        answer = await generate_raw_text(prompt)
+
+        print("\n=== RAG PROMPT ===")
+        print(prompt)
+        print("==================\n")
+
+        return {
+            "answer": answer,
+            "sources": sources,
+            "confidence_score": confidence
+        }
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error processing question: {str(e)}"
+        )
+
+
+@router.post("/admin/upload")
 async def admin_upload(
     file: UploadFile = File(...),
     api_key: str = Header(...)
@@ -142,7 +186,7 @@ async def admin_upload(
     }
 
 
-@app.delete("/admin/delete")
+@router.delete("/admin/delete")
 async def admin_delete(
     source: str,
     api_key: str = Header(...)
@@ -158,13 +202,13 @@ async def admin_delete(
     return {"status": "Deleted successfully"}
 
 
-@app.get("/health")
+@router.get("/health")
 def health_check():
     """Public health check endpoint"""
     return {"status": "healthy", "service": "explain_service"}
 
 
-@app.get("/protected")
+@router.get("/protected")
 def protected_endpoint(user: CurrentUser = Depends(verify_user_or_admin)):
     """Test endpoint to verify authentication"""
     return {

@@ -22,3 +22,7 @@ export const chatWithAgent = async (
   return response.data;
 };
 
+export const askSecondBrain = async (query: string) => {
+  const response = await API.post("/ask", { query });
+  return response.data;
+};
