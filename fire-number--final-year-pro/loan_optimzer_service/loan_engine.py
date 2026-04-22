@@ -1,9 +1,11 @@
 import math
+from typing import List, Dict, Any, Union
+from .exceptions import InvalidLoanInputError, InvalidInterestRateError, EMIValidationError
 
-def validate_loan_inputs(loan_amount, annual_interest_rate, tenure_years):
+def validate_loan_inputs(loan_amount: float, annual_interest_rate: float, tenure_years: int) -> None:
 
     if loan_amount <= 0:
-        raise ValueError("Loan amount must be greater than 0.")
+        raise InvalidLoanInputError("Loan amount must be greater than 0.")
 
     # Accept both decimal (0.085) and percentage (8.5) formats
     # Convert percentage to decimal if needed
@@ -12,12 +14,12 @@ def validate_loan_inputs(loan_amount, annual_interest_rate, tenure_years):
         rate = rate / 100
     
     if rate <= 0 or rate > 1:  # Allow up to 100%
-        raise ValueError("Interest rate must be between 0 and 100%.")
+        raise InvalidInterestRateError("Interest rate must be between 0 and 100%.")
 
     if tenure_years <= 0 or tenure_years > 40:
-        raise ValueError("Tenure must be between 1 and 40 years.")
+        raise InvalidLoanInputError("Tenure must be between 1 and 40 years.")
 
-def normalize_interest_rate(rate_value, rate_type):
+def normalize_interest_rate(rate_value: float, rate_type: str) -> float:
     """
     Converts interest rate to annual rate.
     Accepts both decimal (0.085) and percentage (8.5) formats.
@@ -25,12 +27,10 @@ def normalize_interest_rate(rate_value, rate_type):
 
     if rate_type == "annual":
         annual_rate = rate_value
-
     elif rate_type == "monthly":
         annual_rate = rate_value * 12
-
     else:
-        raise ValueError("rate_type must be 'annual' or 'monthly'.")
+        raise InvalidInterestRateError("rate_type must be 'annual' or 'monthly'.")
 
     # Convert percentage to decimal if needed (e.g., 8.5 -> 0.085)
     if annual_rate > 1:
@@ -38,13 +38,13 @@ def normalize_interest_rate(rate_value, rate_type):
     
     # Safety check - allow up to 100%
     if annual_rate <= 0 or annual_rate > 1:
-        raise ValueError("Annual interest must be between 0% and 100%.")
+        raise InvalidInterestRateError("Annual interest must be between 0% and 100%.")
 
     return annual_rate
 
 
-#EMI calculating 
-def calculate_emi(loan_amount, annual_interest_rate, tenure_years):
+# EMI calculating 
+def calculate_emi(loan_amount: float, annual_interest_rate: float, tenure_years: int) -> float:
     validate_loan_inputs(loan_amount, annual_interest_rate, tenure_years)
 
     monthly_rate = annual_interest_rate / 12
@@ -58,26 +58,24 @@ def calculate_emi(loan_amount, annual_interest_rate, tenure_years):
     return round(emi, 2)
 
 
-
 ## calculating the interest their paid 
 
-def generate_amortization_schedule(loan_amount, annual_interest_rate, emi):
+def generate_amortization_schedule(loan_amount: float, annual_interest_rate: float, emi: float) -> Dict[str, Any]:
 
     monthly_rate = annual_interest_rate / 12
 
     if emi <= 0:
-        raise ValueError("EMI must be greater than 0.")
+        raise EMIValidationError("EMI must be greater than 0.")
 
     min_emi_required = loan_amount * monthly_rate
 
     if emi <= min_emi_required:
-        raise ValueError(
+        raise EMIValidationError(
             f"EMI too low. Minimum EMI must be greater than {round(min_emi_required,2)}"
         )
 
-    #
     if emi > loan_amount:
-        raise ValueError("EMI is unrealistically high compared to loan amount.")
+        raise EMIValidationError("EMI is unrealistically high compared to loan amount.")
 
 
     monthly_rate = annual_interest_rate / 12
@@ -87,7 +85,7 @@ def generate_amortization_schedule(loan_amount, annual_interest_rate, emi):
 
     max_month_limit = 1000  # safety guard
 
-    schedule = []
+    schedule: List[Dict[str, Union[int, float]]] = []
 
     while balance > 0 and month < max_month_limit:
 
@@ -98,7 +96,7 @@ def generate_amortization_schedule(loan_amount, annual_interest_rate, emi):
 
         # Prevent negative principal case
         if principal <= 0:
-            raise ValueError("EMI too low. Loan will never be repaid.")
+            raise EMIValidationError("EMI too low. Loan will never be repaid.")
 
         # Final month adjustment
         if principal > balance:
@@ -116,7 +114,7 @@ def generate_amortization_schedule(loan_amount, annual_interest_rate, emi):
         })
 
     if month >= max_month_limit:
-        raise ValueError("Loan repayment exceeds safe simulation limit.")
+        raise EMIValidationError("Loan repayment exceeds safe simulation limit.")
 
     return {
         "months_to_payoff": month,
@@ -124,7 +122,7 @@ def generate_amortization_schedule(loan_amount, annual_interest_rate, emi):
         "schedule": schedule
     }
 
-def suggest_optimal_emi(loan_amount, annual_interest_rate, tenure_years):
+def suggest_optimal_emi(loan_amount: float, annual_interest_rate: float, tenure_years: int) -> Dict[str, Any]:
 
     base_emi = calculate_emi(
         loan_amount,
@@ -133,7 +131,7 @@ def suggest_optimal_emi(loan_amount, annual_interest_rate, tenure_years):
     )
 
     increments = [0, 0.1, 0.2, 0.3]  # include base EMI
-    results = []
+    results: List[Dict[str, Union[float, int]]] = []
 
     for inc in increments:
 

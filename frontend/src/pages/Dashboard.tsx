@@ -70,20 +70,7 @@ export function Dashboard() {
   const health = data?.health;
   const loans = data?.loans;
 
-  const chartData =
-    fire || health
-      ? [
-        fire && fire.fire_number
-          ? { name: "FIRE Number (L)", value: fire.fire_number / 1e5 }
-          : null,
-        fire && fire.final_wealth
-          ? { name: "Final Wealth (L)", value: fire.final_wealth / 1e5 }
-          : null,
-        health && health.score
-          ? { name: "Health Score", value: health.score }
-          : null,
-      ].filter(Boolean) ?? []
-      : [];
+
 
   return (
     <div className="space-y-10 py-6 relative">
@@ -167,9 +154,7 @@ export function Dashboard() {
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart
                   data={Array.from({ length: fire.fire_year + 1 }).map((_, i) => {
-                    const realReturn = ((1 + 0.12) / (1 + 0.06)) - 1;
                     const savings = Number(fire.current_savings) || 0;
-                    const income = Number(fire.monthly_income) || 0;
                     // Note: Dashboard API doesn't currently return living_expense directly in the 'fire' object,
                     // but we can estimate the savings rate or just use the math if the backend returns it.
                     // For now, let's use a simplified PMT that gets them to the FIRE number in `fire_year` years.
@@ -220,7 +205,7 @@ export function Dashboard() {
                       color: "#f8fafc"
                     }}
                     itemStyle={{ color: "#34d399", fontWeight: 600 }}
-                    formatter={(value: number) => [`₹${(value / 1e5).toFixed(2)}L`, "Projected Wealth"]}
+                    formatter={(value: any) => [`₹${(Number(value) / 1e5).toFixed(2)}L`, "Projected Wealth"]}
                   />
                   <Area type="monotone" dataKey="wealth" stroke="#10b981" strokeWidth={2} fillOpacity={1} fill="url(#colorWealthDash)" />
                 </AreaChart>

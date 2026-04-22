@@ -431,7 +431,7 @@ export function FireCalculator() {
                     <Tooltip
                       contentStyle={{ backgroundColor: "rgba(15, 23, 42, 0.9)", border: "1px solid rgba(255, 255, 255, 0.1)", borderRadius: "12px", color: "#f8fafc" }}
                       itemStyle={{ color: "#34d399", fontWeight: 600 }}
-                      formatter={(value: number) => [`₹${(value / 1e5).toFixed(2)}L`, "Projected Wealth"]}
+                      formatter={(value: any) => [`₹${(Number(value) / 1e5).toFixed(2)}L`, "Projected Wealth"]}
                     />
                     <Area type="monotone" dataKey="wealth" stroke="#10b981" strokeWidth={2} fillOpacity={1} fill="url(#colorWealth)" />
                   </AreaChart>

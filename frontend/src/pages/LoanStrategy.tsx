@@ -50,7 +50,19 @@ export function LoanStrategy() {
     setError("");
     setResult(null);
     try {
-      const data = await compareLoanFireStrategy(form);
+      const payload: LoanFireStrategyInput = {
+        ...form,
+        monthly_income: Number(form.monthly_income) || 0,
+        living_expense: Number(form.living_expense) || 0,
+        current_savings: Number(form.current_savings) || 0,
+        return_rate: Number(form.return_rate) || 0,
+        inflation_rate: Number(form.inflation_rate) || 0,
+        loan_amount: Number(form.loan_amount) || 0,
+        interest_rate_value: Number(form.interest_rate_value) || 0,
+        loan_emi: Number(form.loan_emi) || 0,
+        loan_years: Number(form.loan_years) || 0,
+      };
+      const data = await compareLoanFireStrategy(payload);
       setResult(data);
     } catch (err: unknown) {
       const msg =

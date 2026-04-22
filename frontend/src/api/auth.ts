@@ -35,3 +35,8 @@ export const getMe = async () => {
   const response = await API.get("/me");
   return response.data;
 };
+
+export const resetPassword = async (data: { email: string; new_password: string }) => {
+  const response = await API.post("/auth/reset-password", data);
+  return response.data;
+};

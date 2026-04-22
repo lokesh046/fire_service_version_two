@@ -1,8 +1,8 @@
 from .vectordb import collection
 from .embedder import embed_text
+from typing import Tuple, List
 
-
-def retrieve(query, top_k=3):
+def retrieve(query: str, top_k: int = 3) -> Tuple[str, List[str], float]:
 
     query_embedding = embed_text([query])[0]
 

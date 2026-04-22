@@ -11,10 +11,9 @@ from sqlalchemy.orm import declarative_base
 
 load_dotenv()
 
-DATABASE_URL = os.getenv(
-    "DATABASE_URL",
-    "postgresql+asyncpg://neondb_owner:npg_6Y0mztCLoeVW@ep-dark-pine-a19uo1ap-pooler.ap-southeast-1.aws.neon.tech/neondb"
-)
+DATABASE_URL = os.getenv("DATABASE_URL")
+if not DATABASE_URL:
+    raise ValueError("DATABASE_URL environment variable is not set")
 
 # Production pool settings
 POOL_SIZE = int(os.getenv("DB_POOL_SIZE", "20"))

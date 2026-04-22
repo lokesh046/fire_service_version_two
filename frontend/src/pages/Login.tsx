@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { loginUser } from "../api/auth";
 import { setAuthToken } from "../api/axios";
 import { useAuthStore } from "../store/authStore";
+import { motion } from "framer-motion";
 
 export function Login() {
   const [email, setEmail] = useState("");
@@ -50,10 +51,23 @@ export function Login() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#020617] relative overflow-hidden px-4">
       {/* Background ambient glows */}
-      <div className="glow-bg bg-emerald-500 w-[500px] h-[500px] top-[-20%] right-[-10%] mix-blend-screen"></div>
-      <div className="glow-bg bg-blue-500 w-[500px] h-[500px] bottom-[-20%] left-[-10%] mix-blend-screen"></div>
+      <motion.div 
+        animate={{ scale: [1, 1.1, 1], opacity: [0.5, 0.8, 0.5] }}
+        transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+        className="glow-bg bg-emerald-500 w-[500px] h-[500px] top-[-20%] right-[-10%] mix-blend-screen"
+      ></motion.div>
+      <motion.div 
+        animate={{ scale: [1, 1.2, 1], opacity: [0.4, 0.7, 0.4] }}
+        transition={{ duration: 10, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+        className="glow-bg bg-blue-500 w-[500px] h-[500px] bottom-[-20%] left-[-10%] mix-blend-screen"
+      ></motion.div>
 
-      <div className="relative z-10 w-full max-w-md">
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: "easeOut" }}
+        className="relative z-10 w-full max-w-md"
+      >
         <div className="text-center mb-8">
           <Link to="/" className="inline-block text-2xl font-bold tracking-tight mb-2">
             <span className="text-white">Wealth To </span>
@@ -122,7 +136,7 @@ export function Login() {
             </Link>
           </p>
         </form>
-      </div>
+      </motion.div>
     </div>
   );
 }

@@ -26,7 +26,7 @@ export function AdminPanel() {
         setStatus({ type: "info", msg: "Uploading and indexing document..." });
 
         try {
-            const res = await uploadRAGDocument(file);
+            await uploadRAGDocument(file);
             setStatus({ type: "success", msg: `Success! ${file.name} added to knowledge base.` });
             setFile(null);
         } catch (err: any) {
