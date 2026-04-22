@@ -34,6 +34,17 @@ export function Login() {
       const destination = from === "/" ? "/dashboard" : from;
       navigate(destination, { replace: true });
     } catch (err: unknown) {
+      if (
+        err &&
+        typeof err === "object" &&
+        "response" in err &&
+        (err as any).response?.status === 403 &&
+        (err as any).response?.data?.detail === "Please verify your email address first."
+      ) {
+        navigate(`/verify-email?email=${encodeURIComponent(email)}`);
+        return;
+      }
+
       const msg =
         err &&
         typeof err === "object" &&
@@ -105,12 +116,17 @@ export function Login() {
               />
             </div>
             <div>
-              <label
-                htmlFor="password"
-                className="block text-sm font-medium text-slate-300 mb-1.5"
-              >
-                Password
-              </label>
+              <div className="flex items-center justify-between mb-1.5">
+                <label
+                  htmlFor="password"
+                  className="block text-sm font-medium text-slate-300"
+                >
+                  Password
+                </label>
+                <Link to="/forgot-password" className="text-xs font-medium text-emerald-400 hover:text-emerald-300 transition-colors">
+                  Forgot password?
+                </Link>
+              </div>
               <input
                 id="password"
                 type="password"

@@ -16,7 +16,7 @@ export function Register() {
     setLoading(true);
     try {
       await registerUser({ username, email, password });
-      navigate("/login");
+      navigate(`/verify-email?email=${encodeURIComponent(email)}`);
     } catch (err: unknown) {
       const msg =
         err &&
