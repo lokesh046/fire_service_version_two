@@ -52,8 +52,14 @@ class FinancialSanityEngine:
             if emi_ratio > 0.7:
                 warnings.append("EMI burden exceeds 70% of income. High risk.")
 
-        if state.fire_year is not None and state.fire_year < 3:
-            warnings.append("FIRE projected under 3 years. Verify realism.")
+        if state.fire_year is not None:
+            try:
+                fire_year_val = float(state.fire_year)
+                if fire_year_val < 3:
+                    warnings.append("FIRE projected under 3 years. Verify realism.")
+            except (ValueError, TypeError):
+                # If it's a string like "Never" or "N/A", we ignore the check
+                pass
 
         if state.return_rate and state.return_rate > 0.25:
             warnings.append("Return rate above 25% annually is highly optimistic.")

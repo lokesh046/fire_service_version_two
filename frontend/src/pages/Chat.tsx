@@ -1,4 +1,6 @@
 import { useState, useEffect, useRef } from "react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { chatWithAgent, askSecondBrain, type ChatServiceResponse } from "../api/chat";
 
 interface AssistantContent {
@@ -116,7 +118,26 @@ function AssistantMessageCard({ content }: { content: AssistantContent }) {
             </svg>
             Advisor Note
           </h4>
-          <p className="text-slate-200 leading-relaxed text-sm whitespace-pre-wrap">{content.advisor}</p>
+          <div className="text-slate-200 leading-relaxed text-sm prose prose-invert max-w-none">
+            <ReactMarkdown
+              remarkPlugins={[remarkGfm]}
+              components={{
+                p: ({ node, ...props }) => <p className="mb-3 last:mb-0" {...props} />,
+                strong: ({ node, ...props }) => <strong className="font-bold text-emerald-400" {...props} />,
+                ul: ({ node, ...props }) => <ul className="list-disc pl-5 mb-3 space-y-1" {...props} />,
+                ol: ({ node, ...props }) => <ol className="list-decimal pl-5 mb-3 space-y-1" {...props} />,
+                li: ({ node, ...props }) => <li className="marker:text-emerald-500" {...props} />,
+                h1: ({ node, ...props }) => <h1 className="text-lg font-bold text-white mb-3 mt-5" {...props} />,
+                h2: ({ node, ...props }) => <h2 className="text-base font-bold text-white mb-2 mt-4" {...props} />,
+                h3: ({ node, ...props }) => <h3 className="text-sm font-bold text-emerald-300 mb-2 mt-3" {...props} />,
+                code: ({ node, inline, ...props }: any) => 
+                  inline ? <code className="bg-slate-800 text-emerald-300 px-1.5 py-0.5 rounded text-xs" {...props} /> : 
+                  <pre className="bg-slate-900 border border-slate-700 p-3 rounded-xl overflow-x-auto text-xs my-3"><code {...props} /></pre>
+              }}
+            >
+              {content.advisor}
+            </ReactMarkdown>
+          </div>
         </div>
       )}
 
@@ -189,8 +210,25 @@ function AssistantMessageCard({ content }: { content: AssistantContent }) {
 function AssistantLearnMessageCard({ content }: { content: { answer: string; sources: string[] } }) {
   return (
     <div className="space-y-4 w-full">
-      <div className="text-slate-200 leading-relaxed text-sm whitespace-pre-wrap flex flex-col gap-2">
-        {content.answer}
+      <div className="text-slate-200 leading-relaxed text-sm prose prose-invert max-w-none">
+        <ReactMarkdown
+          remarkPlugins={[remarkGfm]}
+          components={{
+            p: ({ node, ...props }) => <p className="mb-3 last:mb-0" {...props} />,
+            strong: ({ node, ...props }) => <strong className="font-bold text-emerald-400" {...props} />,
+            ul: ({ node, ...props }) => <ul className="list-disc pl-5 mb-3 space-y-1" {...props} />,
+            ol: ({ node, ...props }) => <ol className="list-decimal pl-5 mb-3 space-y-1" {...props} />,
+            li: ({ node, ...props }) => <li className="marker:text-emerald-500" {...props} />,
+            h1: ({ node, ...props }) => <h1 className="text-lg font-bold text-white mb-3 mt-5" {...props} />,
+            h2: ({ node, ...props }) => <h2 className="text-base font-bold text-white mb-2 mt-4" {...props} />,
+            h3: ({ node, ...props }) => <h3 className="text-sm font-bold text-emerald-300 mb-2 mt-3" {...props} />,
+            code: ({ node, inline, ...props }: any) => 
+              inline ? <code className="bg-slate-800 text-emerald-300 px-1.5 py-0.5 rounded text-xs" {...props} /> : 
+              <pre className="bg-slate-900 border border-slate-700 p-3 rounded-xl overflow-x-auto text-xs my-3"><code {...props} /></pre>
+          }}
+        >
+          {content.answer}
+        </ReactMarkdown>
       </div>
       {content.sources && content.sources.length > 0 && (
         <div className="pt-3 border-t border-slate-700/50 mt-4">
@@ -297,7 +335,7 @@ export function Chat() {
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-6rem)] relative w-full max-w-5xl mx-auto py-2">
+    <div className="flex flex-col flex-1 relative w-full max-w-7xl mx-auto py-2 min-h-[600px]">
       {/* Background ambient glow */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-3/4 h-3/4 bg-emerald-500/10 blur-[100px] pointer-events-none rounded-full mix-blend-screen" />
 
@@ -404,18 +442,18 @@ export function Chat() {
         )}
 
         <div className="p-4 sm:p-6 bg-slate-950/40 border-t border-slate-800/60 backdrop-blur-xl">
-          <form onSubmit={handleSend} className="flex gap-3 max-w-4xl mx-auto">
+          <form onSubmit={handleSend} className="flex gap-3 max-w-5xl mx-auto">
             <input
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder="Ask about your financial plan..."
-              className="flex-1 rounded-xl glass border border-slate-700/50 bg-slate-900/40 px-5 py-3.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 shadow-inner transition-all hover:bg-slate-900/60"
+              className="flex-1 rounded-xl glass border border-slate-700/50 bg-slate-900/40 px-5 py-4 text-base text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 shadow-inner transition-all hover:bg-slate-900/60"
             />
             <button
               type="submit"
               disabled={loading || !input.trim()}
-              className="rounded-xl flex-shrink-0 bg-emerald-500 px-6 py-3.5 text-sm font-bold text-white shadow-lg shadow-emerald-500/20 hover:bg-emerald-400 hover:shadow-emerald-500/40 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 focus:ring-offset-slate-900 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              className="btn-3d flex-shrink-0 !px-8 !py-4 !text-base"
             >
               Send
             </button>

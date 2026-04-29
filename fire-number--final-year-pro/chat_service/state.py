@@ -9,6 +9,7 @@ class FinancialState(BaseModel):
     living_expense: Optional[float] = None
     current_savings: Optional[float] = None
 
+    loan_amount: Optional[float] = None
     loan_emi: Optional[float] = None
     loan_years: Optional[int] = None
     loan_interest_rate: Optional[float] = None

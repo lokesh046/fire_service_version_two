@@ -1,17 +1,19 @@
 @import "tailwindcss";
 
 @theme {
-  --color-slate-950: #020617;
+  --color-slate-950: #000000;
+  /* Revert to Emerald and Bright Yellow/Gold for Game Theme */
   --color-emerald-400: #34d399;
   --color-emerald-500: #10b981;
+  --color-emerald-600: #059669;
 }
 
 body {
   margin: 0;
   min-height: 100vh;
   font-family: "Inter", system-ui, -apple-system, sans-serif;
-  background-color: #020617; /* Slate 950 */
-  color: rgb(248 250 252); /* Slate 50 */
+  background-color: #000000; /* Pitch Black */
+  color: rgb(248 250 252);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -22,29 +24,58 @@ body {
   flex-direction: column;
 }
 
-/* Glassmorphism Utilities */
+/* 3D Animated Background Animations */
+@keyframes float {
+  0% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-30px) scale(1.05); }
+  100% { transform: translateY(0) scale(1); }
+}
+
+@keyframes float-reverse {
+  0% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(30px) scale(0.95); }
+  100% { transform: translateY(0) scale(1); }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { opacity: 0.3; transform: scale(1); }
+  50% { opacity: 0.7; transform: scale(1.1); }
+}
+
+@keyframes grid-flow {
+  0% { transform: rotateX(60deg) translateY(0); }
+  100% { transform: rotateX(60deg) translateY(50px); }
+}
+
+.animate-float { animation: float 15s ease-in-out infinite; }
+.animate-float-reverse { animation: float-reverse 18s ease-in-out infinite; }
+.animate-pulse-glow { animation: pulse-glow 10s ease-in-out infinite; }
+.animate-grid-flow { animation: grid-flow 3s linear infinite; }
+
+/* Glossy 3D Game Cards */
 .glass {
-  background: rgba(15, 23, 42, 0.4); /* Slate 900 with opacity */
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+  background: rgba(10, 10, 10, 0.4);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
 }
 
 .glass-card {
-  background: linear-gradient(145deg, rgba(30, 41, 59, 0.4) 0%, rgba(15, 23, 42, 0.4) 100%);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.5);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  background: linear-gradient(145deg, rgba(20, 20, 20, 0.6) 0%, rgba(5, 5, 5, 0.8) 100%);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  border-radius: 20px; 
 }
 
 .glass-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.6), 0 0 20px rgba(52, 211, 153, 0.05);
-  border-color: rgba(255, 255, 255, 0.1);
+  transform: translateY(-4px);
+  box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 1), 0 0 30px rgba(16, 185, 129, 0.15);
+  border-color: rgba(16, 185, 129, 0.4);
 }
 
 /* Gradients */
@@ -63,10 +94,61 @@ body {
 }
 
 .glow-bg {
-  position: absolute;
-  border-radius: 50%;
-  filter: blur(80px);
-  z-index: 0;
-  opacity: 0.15;
-  pointer-events: none;
+  display: none; /* Replaced by global layout background */
+}
+
+/* 3D Game Theme Global Inputs */
+input[type="text"],
+input[type="number"],
+input[type="password"],
+input[type="email"],
+select {
+  background: #0a0a0a !important;
+  border: 1px solid #222 !important;
+  border-top-color: #000 !important;
+  border-bottom-color: #333 !important;
+  box-shadow: inset 0 3px 6px rgba(0,0,0,0.9), 0 1px 0 rgba(255,255,255,0.05) !important;
+  color: #facc15 !important;
+  font-weight: 600 !important;
+  border-radius: 12px !important;
+  transition: all 0.2s ease !important;
+}
+
+input[type="text"]:focus,
+input[type="number"]:focus,
+input[type="password"]:focus,
+input[type="email"]:focus,
+select:focus {
+  border-color: #eab308 !important;
+  box-shadow: inset 0 3px 6px rgba(0,0,0,0.9), 0 0 12px rgba(234, 179, 8, 0.4) !important;
+  outline: none !important;
+}
+
+/* 3D Game Theme Heavy Buttons */
+button[type="submit"], .btn-3d {
+  background: linear-gradient(180deg, #eab308 0%, #ca8a04 100%) !important;
+  border: 1px solid #854d0e !important;
+  border-top: 1px solid #fde047 !important;
+  color: #000 !important;
+  font-weight: 800 !important;
+  box-shadow: 0 6px 15px rgba(202, 138, 4, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.5) !important;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.4) !important;
+  transition: all 0.1s ease !important;
+  border-radius: 12px !important; 
+  padding: 0.875rem 2rem !important;
+  text-transform: uppercase !important;
+  letter-spacing: normal !important;
+}
+
+button[type="submit"]:hover, .btn-3d:hover {
+  background: linear-gradient(180deg, #facc15 0%, #d97706 100%) !important;
+  box-shadow: 0 8px 20px rgba(202, 138, 4, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.7) !important;
+  transform: translateY(-2px) !important;
+}
+
+button[type="submit"]:active, .btn-3d:active {
+  background: linear-gradient(180deg, #ca8a04 0%, #a16207 100%) !important;
+  box-shadow: inset 0 4px 8px rgba(0, 0, 0, 0.5) !important;
+  border-top: 1px solid #713f12 !important;
+  transform: translateY(2px) !important;
 }

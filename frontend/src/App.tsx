@@ -8,6 +8,7 @@ import { Dashboard } from "./pages/Dashboard";
 import { VerifyEmail } from "./pages/VerifyEmail";
 import { ForgotPassword } from "./pages/ForgotPassword";
 import { ResetPassword } from "./pages/ResetPassword";
+import { Report } from "./pages/Report";
 import { AdminPanel } from "./pages/AdminPanel";
 import { FireCalculator } from "./pages/FireCalculator";
 import { LoanStrategy } from "./pages/LoanStrategy";
@@ -38,6 +39,7 @@ function App() {
           }
         >
           <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/report" element={<Report />} />
           <Route path="/fire" element={<FireCalculator />} />
           <Route path="/loan-strategy" element={<LoanStrategy />} />
           <Route path="/loan-only" element={<LoanOnly />} />

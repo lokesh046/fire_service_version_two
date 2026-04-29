@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
 import { useAuthStore } from "../store/authStore";
 import { getDashboard, type DashboardData } from "../api/dashboard";
 import { getFireHistory } from "../api/fire";
@@ -20,6 +21,14 @@ export function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const { user } = useAuthStore();
+  const navigate = useNavigate();
+
+  const tools = [
+    { title: "FIRE Calculator", icon: "/icons/fire.png", path: "/fire" },
+    { title: "AI Assistant", icon: "/icons/chat.png", path: "/chat" },
+    { title: "Loan Strategy", icon: "/icons/loan.png", path: "/loan-strategy" },
+    { title: "Export Report", icon: "/icons/report.png", path: "/report" },
+  ];
 
   useEffect(() => {
     Promise.all([getDashboard(), getFireHistory()])
@@ -77,12 +86,43 @@ export function Dashboard() {
       {/* Background ambient glow for dashboard */}
       <div className="glow-bg bg-emerald-500/20 w-[400px] h-[400px] top-0 left-[-10%] mix-blend-screen absolute"></div>
 
+      <div className="relative z-10 flex flex-col items-center justify-center text-center mt-4 mb-12">
+        <div className="inline-flex items-center justify-center p-3 bg-gradient-to-br from-yellow-500/20 to-yellow-700/5 rounded-full border border-yellow-500/30 mb-6 shadow-[0_0_20px_rgba(234,179,8,0.15)]">
+          <svg className="w-8 h-8 text-yellow-500" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zm0 7.5l-10-5v9.8l10 5 10-5V4.5l-10 5z" /></svg>
+        </div>
+        <h2 className="text-4xl md:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-white to-slate-400 tracking-tight mb-4">
+          One Stop Solution
+        </h2>
+        <p className="text-slate-400 max-w-2xl mx-auto text-base md:text-lg mb-12 leading-relaxed">
+          A one stop shop for all your financial problems, and helping you implement all your learnings right from saving to investing.
+        </p>
+
+        {/* Tools Grid */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 w-full max-w-5xl mx-auto">
+          {tools.map((tool, index) => (
+            <motion.div
+              key={tool.title}
+              whileHover={{ y: -8, scale: 1.02 }}
+              transition={{ type: "spring", stiffness: 300, damping: 20 }}
+              onClick={() => navigate(tool.path)}
+              className="bg-[#1c1c1c] border border-slate-800/60 rounded-2xl p-6 flex flex-col items-center justify-center gap-4 cursor-pointer shadow-xl hover:border-yellow-500/30 hover:shadow-[0_10px_30px_rgba(234,179,8,0.1)] group relative overflow-hidden"
+            >
+              <div className="absolute inset-0 bg-gradient-to-b from-white/[0.02] to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+              <img src={tool.icon} alt={tool.title} className="w-20 h-20 object-contain drop-shadow-2xl group-hover:scale-110 transition-transform duration-500" />
+              <span className="text-sm font-semibold text-slate-300 group-hover:text-yellow-500 transition-colors relative z-10">{tool.title}</span>
+            </motion.div>
+          ))}
+        </div>
+      </div>
+
+      <div className="h-px w-full bg-gradient-to-r from-transparent via-slate-800 to-transparent my-10"></div>
+
       <div className="relative z-10 flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-white tracking-tight">
-            Welcome back, <span className="text-emerald-400">{user?.username || 'User'}</span>
-          </h1>
-          <p className="text-slate-400 mt-2">
+          <h2 className="text-2xl font-bold text-white tracking-tight">
+            Welcome back, <span className="text-yellow-500">{user?.username || 'User'}</span>
+          </h2>
+          <p className="text-slate-400 mt-1 text-sm">
             Here's a snapshot of your true wealth and FIRE journey.
           </p>
         </div>
@@ -94,7 +134,7 @@ export function Dashboard() {
               <select
                 value={activeScenarioId || ""}
                 onChange={(e) => setActiveScenarioId(e.target.value)}
-                className="bg-slate-900/80 border border-slate-700 text-white text-sm rounded-lg focus:ring-emerald-500 focus:border-emerald-500 block p-2.5 transition-colors"
+                className="bg-slate-900/80 border border-slate-700 text-white text-sm rounded-lg focus:ring-yellow-500 focus:border-yellow-500 block p-2 transition-colors"
               >
                 {scenarios.map(s => (
                   <option key={s.id} value={s.id}>{s.scenario_name}</option>
@@ -102,13 +142,6 @@ export function Dashboard() {
               </select>
             </div>
           )}
-
-          <Link
-            to="/fire"
-            className="inline-flex flex-shrink-0 items-center justify-center rounded-lg bg-emerald-500 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-emerald-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-500 transition-colors"
-          >
-            Update Plan
-          </Link>
         </div>
       </div>
 

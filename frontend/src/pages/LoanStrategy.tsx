@@ -105,7 +105,7 @@ export function LoanStrategy() {
               min={0}
               value={form.monthly_income}
               onChange={(e) => update("monthly_income", Number(e.target.value) || e.target.value === "" ? (e.target.value === "" ? "" : Number(e.target.value)) : 0)}
-              className="w-full rounded-xl border border-slate-700/50 bg-slate-900/50 px-4 py-2.5 text-sm text-white focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500/50 transition-colors"
+              className="w-full rounded-xl px-4 py-2.5 text-sm transition-colors"
             />
           </div>
           <div>
@@ -117,7 +117,7 @@ export function LoanStrategy() {
               min={0}
               value={form.living_expense}
               onChange={(e) => update("living_expense", Number(e.target.value) || e.target.value === "" ? (e.target.value === "" ? "" : Number(e.target.value)) : 0)}
-              className="w-full rounded-xl border border-slate-700/50 bg-slate-900/50 px-4 py-2.5 text-sm text-white focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500/50 transition-colors"
+              className="w-full rounded-xl px-4 py-2.5 text-sm transition-colors"
             />
           </div>
           <div>
@@ -129,7 +129,7 @@ export function LoanStrategy() {
               min={0}
               value={form.current_savings}
               onChange={(e) => update("current_savings", Number(e.target.value) || e.target.value === "" ? (e.target.value === "" ? "" : Number(e.target.value)) : 0)}
-              className="w-full rounded-xl border border-slate-700/50 bg-slate-900/50 px-4 py-2.5 text-sm text-white focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500/50 transition-colors"
+              className="w-full rounded-xl px-4 py-2.5 text-sm transition-colors"
             />
           </div>
           <div>
@@ -143,7 +143,7 @@ export function LoanStrategy() {
               step={0.01}
               value={form.return_rate}
               onChange={(e) => update("return_rate", Number(e.target.value) || e.target.value === "" ? (e.target.value === "" ? "" : Number(e.target.value)) : 0)}
-              className="w-full rounded-xl border border-slate-700/50 bg-slate-900/50 px-4 py-2.5 text-sm text-white focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500/50 transition-colors"
+              className="w-full rounded-xl px-4 py-2.5 text-sm transition-colors"
             />
           </div>
           <div>
@@ -157,7 +157,7 @@ export function LoanStrategy() {
               step={0.01}
               value={form.inflation_rate}
               onChange={(e) => update("inflation_rate", Number(e.target.value) || e.target.value === "" ? (e.target.value === "" ? "" : Number(e.target.value)) : 0)}
-              className="w-full rounded-xl border border-slate-700/50 bg-slate-900/50 px-4 py-2.5 text-sm text-white focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500/50 transition-colors"
+              className="w-full rounded-xl px-4 py-2.5 text-sm transition-colors"
             />
           </div>
           <div>
@@ -169,7 +169,7 @@ export function LoanStrategy() {
               min={0}
               value={form.loan_emi}
               onChange={(e) => update("loan_emi", Number(e.target.value) || e.target.value === "" ? (e.target.value === "" ? "" : Number(e.target.value)) : 0)}
-              className="w-full rounded-xl border border-slate-700/50 bg-slate-900/50 px-4 py-2.5 text-sm text-white focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500/50 transition-colors"
+              className="w-full rounded-xl px-4 py-2.5 text-sm transition-colors"
             />
           </div>
           <div>
@@ -181,7 +181,7 @@ export function LoanStrategy() {
               min={1}
               value={form.loan_years}
               onChange={(e) => update("loan_years", Number(e.target.value) || e.target.value === "" ? (e.target.value === "" ? "" : Number(e.target.value)) : 0)}
-              className="w-full rounded-xl border border-slate-700/50 bg-slate-900/50 px-4 py-2.5 text-sm text-white focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500/50 transition-colors"
+              className="w-full rounded-xl px-4 py-2.5 text-sm transition-colors"
             />
           </div>
           <div>
@@ -193,7 +193,7 @@ export function LoanStrategy() {
               min={0}
               value={form.interest_rate_value}
               onChange={(e) => update("interest_rate_value", Number(e.target.value) || e.target.value === "" ? (e.target.value === "" ? "" : Number(e.target.value)) : 0)}
-              className="w-full rounded-xl border border-slate-700/50 bg-slate-900/50 px-4 py-2.5 text-sm text-white focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500/50 transition-colors"
+              className="w-full rounded-xl px-4 py-2.5 text-sm transition-colors"
             />
           </div>
         </div>
@@ -207,7 +207,7 @@ export function LoanStrategy() {
         <button
           type="submit"
           disabled={loading}
-          className="inline-flex items-center rounded-xl bg-emerald-500 px-6 py-3 text-sm font-semibold text-slate-950 shadow-sm hover:bg-emerald-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-500 disabled:opacity-50 transition-colors"
+          className="btn-3d w-full md:w-auto"
         >
           {loading ? "Comparing..." : "Compare Strategy"}
         </button>

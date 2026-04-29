@@ -25,9 +25,10 @@ requests
 redis[hiredis]
 
 # AI / ML
-sentence-transformers
-chromadb
+pinecone
 google-generativeai
+google-genai
+huggingface-hub
 
 # Data Processing
 pandas

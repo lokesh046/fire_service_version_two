@@ -166,8 +166,9 @@ export function FireCalculator() {
         </p>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+      <div className="glass-card p-6 md:p-8">
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           <div className="md:col-span-2">
             <label className="block text-xs font-medium text-slate-300 mb-1">
               Scenario Name
@@ -177,7 +178,7 @@ export function FireCalculator() {
               value={form.scenario_name}
               onChange={(e) => update("scenario_name", e.target.value)}
               placeholder="e.g. Primary Goal, Retire at 40, Buy a House"
-              className="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-colors"
+              className="w-full rounded-lg px-3 py-2 text-sm transition-colors"
             />
           </div>
           <div>
@@ -190,7 +191,7 @@ export function FireCalculator() {
               step={1000}
               value={form.monthly_income}
               onChange={(e) => update("monthly_income", Number(e.target.value) || e.target.value === "" ? (e.target.value === "" ? "" : Number(e.target.value)) : 0)}
-              className="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white"
+              className="w-full rounded-lg px-3 py-2 text-sm transition-colors"
             />
           </div>
           <div>
@@ -203,7 +204,7 @@ export function FireCalculator() {
               step={1000}
               value={form.living_expense}
               onChange={(e) => update("living_expense", Number(e.target.value) || e.target.value === "" ? (e.target.value === "" ? "" : Number(e.target.value)) : 0)}
-              className="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white"
+              className="w-full rounded-lg px-3 py-2 text-sm transition-colors"
             />
           </div>
           <div>
@@ -218,7 +219,7 @@ export function FireCalculator() {
               onChange={(e) =>
                 update("current_savings", Number(e.target.value) || e.target.value === "" ? (e.target.value === "" ? "" : Number(e.target.value)) : 0)
               }
-              className="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white"
+              className="w-full rounded-lg px-3 py-2 text-sm transition-colors"
             />
           </div>
           <div>
@@ -232,7 +233,7 @@ export function FireCalculator() {
               step={0.01}
               value={form.return_rate}
               onChange={(e) => update("return_rate", Number(e.target.value) || e.target.value === "" ? (e.target.value === "" ? "" : Number(e.target.value)) : 0)}
-              className="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white"
+              className="w-full rounded-lg px-3 py-2 text-sm transition-colors"
             />
           </div>
           <div>
@@ -248,7 +249,7 @@ export function FireCalculator() {
               onChange={(e) =>
                 update("inflation_rate", Number(e.target.value) || e.target.value === "" ? (e.target.value === "" ? "" : Number(e.target.value)) : 0)
               }
-              className="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white"
+              className="w-full rounded-lg px-3 py-2 text-sm transition-colors"
             />
           </div>
           <div>
@@ -258,7 +259,7 @@ export function FireCalculator() {
             <select
               value={form.has_insurance}
               onChange={(e) => update("has_insurance", e.target.value)}
-              className="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white"
+              className="w-full rounded-lg px-3 py-2 text-sm transition-colors"
             >
               <option value="yes">Yes</option>
               <option value="no">No</option>
@@ -271,7 +272,7 @@ export function FireCalculator() {
             <select
               value={form.has_loan}
               onChange={(e) => update("has_loan", e.target.value)}
-              className="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white"
+              className="w-full rounded-lg px-3 py-2 text-sm transition-colors"
             >
               <option value="no">No</option>
               <option value="yes">Yes</option>
@@ -290,7 +291,7 @@ export function FireCalculator() {
                   onChange={(e) =>
                     update("loan_amount", Number(e.target.value) || e.target.value === "" ? (e.target.value === "" ? "" : Number(e.target.value)) : 0)
                   }
-                  className="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white"
+                  className="w-full rounded-lg px-3 py-2 text-sm transition-colors"
                 />
               </div>
               <div>
@@ -302,7 +303,7 @@ export function FireCalculator() {
                   min={0}
                   value={form.loan_emi}
                   onChange={(e) => update("loan_emi", Number(e.target.value) || e.target.value === "" ? (e.target.value === "" ? "" : Number(e.target.value)) : 0)}
-                  className="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white"
+                  className="w-full rounded-lg px-3 py-2 text-sm transition-colors"
                 />
               </div>
               <div>
@@ -316,7 +317,7 @@ export function FireCalculator() {
                   onChange={(e) =>
                     update("loan_years", Number(e.target.value) || e.target.value === "" ? (e.target.value === "" ? "" : Number(e.target.value)) : 0)
                   }
-                  className="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white"
+                  className="w-full rounded-lg px-3 py-2 text-sm transition-colors"
                 />
               </div>
               <div>
@@ -330,7 +331,7 @@ export function FireCalculator() {
                   onChange={(e) =>
                     update("interest_rate_value", Number(e.target.value) || e.target.value === "" ? (e.target.value === "" ? "" : Number(e.target.value)) : 0)
                   }
-                  className="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white"
+                  className="w-full rounded-lg px-3 py-2 text-sm transition-colors"
                 />
               </div>
             </>
@@ -351,18 +352,19 @@ export function FireCalculator() {
           </div>
         )}
 
-        <button
-          type="submit"
-          disabled={loading}
-          className="inline-flex items-center rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-emerald-500 disabled:opacity-50"
-        >
-          {loading ? "Calculating..." : "Calculate & Save"}
-        </button>
-      </form>
+          <button
+            type="submit"
+            disabled={loading}
+            className="btn-3d w-full md:w-auto"
+          >
+            {loading ? "Calculating..." : "Calculate & Save"}
+          </button>
+        </form>
+      </div>
 
       {result && (
-        <div className="rounded-xl bg-slate-900/60 border border-slate-800 p-5 space-y-4 text-sm">
-          <h2 className="text-sm font-semibold text-white">Results</h2>
+        <div className="glass-card p-6 md:p-8 space-y-6 text-sm mt-8">
+          <h2 className="text-xl font-bold text-white border-b border-slate-800 pb-2">Results</h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div>
               <p className="text-slate-400 text-xs">FIRE Number</p>

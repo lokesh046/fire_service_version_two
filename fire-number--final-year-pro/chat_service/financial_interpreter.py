@@ -87,6 +87,10 @@ class FinancialInterpreter:
             "current_savings": self.extract_number_phrase(savings_pattern, message),
             "loan_emi": self.extract_number_phrase(emi_pattern, message),
             "loan_years": self.extract_number_phrase(years_pattern, message),
+            "loan_amount": None,
+            "loan_interest_rate": None,
+            "return_rate": None,
+            "inflation_rate": None,
         }
         
         # Check loan negations
@@ -126,8 +130,12 @@ class FinancialInterpreter:
                 "living_expense": number or null,
                 "current_savings": number or null,
                 "has_loan": "yes" or "no" or null,
+                "loan_amount": number or null,
                 "loan_emi": number or null,
                 "loan_years": number or null,
+                "loan_interest_rate": number or null (e.g., 0.10 for 10%),
+                "return_rate": number or null (e.g., 0.12 for 12%),
+                "inflation_rate": number or null (e.g., 0.06 for 6%),
                 "has_insurance": "yes" or "no" or null
             }}
             """
@@ -143,7 +151,17 @@ class FinancialInterpreter:
         # -----------------------------
         # Normalization
         # -----------------------------
-        data["has_loan"] = True if data.get("loan_emi") else False
+        
+        # Auto-calculate EMI if loan amount and interest are provided but EMI is not
+        if data.get("loan_amount") and data.get("loan_years") and data.get("loan_interest_rate") and not data.get("loan_emi"):
+            p = float(data["loan_amount"])
+            r = float(data["loan_interest_rate"]) / 12.0
+            n = float(data["loan_years"]) * 12.0
+            if r > 0 and n > 0:
+                emi = p * r * ((1 + r) ** n) / (((1 + r) ** n) - 1)
+                data["loan_emi"] = round(emi, 2)
+        
+        data["has_loan"] = True if data.get("loan_emi") or data.get("loan_amount") else False
         data["has_insurance"] = data.get("has_insurance", "no")
 
         return data

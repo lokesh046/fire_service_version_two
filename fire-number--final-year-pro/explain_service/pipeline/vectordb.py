@@ -1,21 +1,13 @@
-import chromadb
-from chromadb.config import Settings
+import os
+from pinecone import Pinecone
+from dotenv import load_dotenv
 
-client = chromadb.Client(
-    Settings(
-        persist_directory= "./chroma_db",
-        is_persistent = True
-    )
-)
+load_dotenv()
 
-collection = client.get_or_create_collection("financial_knowledge")
+PINECONE_API_KEY = os.getenv("PINECONE_API_KEY")
 
-def retrieve_context(query, embedder, top_k=3):
-    query_embedding = embedder([query])[0]
+pc = Pinecone(api_key=PINECONE_API_KEY)
+index_name = "financial-knowledge"
 
-    result = collectin.query(
-        query_embeddings = [query_embedding],
-        n_results =top_k
-    )
-
-    return "\n".join(result["documents"][o])
+# Make sure to create this index in the Pinecone UI: Dimensions 1024, Metric Cosine
+index = pc.Index(index_name)

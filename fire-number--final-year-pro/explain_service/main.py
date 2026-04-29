@@ -7,7 +7,7 @@ import shutil
 from .pipeline.retrieval import retrieve
 from .pipeline.prompt_builder import build_prompt
 from .pipeline.ingestion import ingest_file
-from .pipeline.vectordb import collection
+from .pipeline.vectordb import index
 from .pipeline.llm_client import generate_explanation
 from shared.services.service_auth import get_current_user, CurrentUser
 
@@ -165,13 +165,14 @@ async def ask_question(
 @router.post("/admin/upload")
 async def admin_upload(
     file: UploadFile = File(...),
-    api_key: str = Header(...)
+    user: CurrentUser = Depends(verify_user_or_admin)
 ):
     """
     Admin endpoint to upload knowledge base documents.
-    Requires admin API key.
+    Requires admin privileges.
     """
-    verify_admin(api_key)
+    if user.role != "admin":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
 
     file_path = os.path.join(UPLOAD_DIR, file.filename)
 
@@ -189,15 +190,16 @@ async def admin_upload(
 @router.delete("/admin/delete")
 async def admin_delete(
     source: str,
-    api_key: str = Header(...)
+    user: CurrentUser = Depends(verify_user_or_admin)
 ):
     """
     Admin endpoint to delete knowledge base documents.
-    Requires admin API key.
+    Requires admin privileges.
     """
-    verify_admin(api_key)
+    if user.role != "admin":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
 
-    collection.delete(where={"source": source})
+    index.delete(filter={"source": source})
 
     return {"status": "Deleted successfully"}
 
