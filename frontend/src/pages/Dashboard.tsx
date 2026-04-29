@@ -99,7 +99,7 @@ export function Dashboard() {
 
         {/* Tools Grid */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 w-full max-w-5xl mx-auto">
-          {tools.map((tool, index) => (
+          {tools.map((tool) => (
             <motion.div
               key={tool.title}
               whileHover={{ y: -8, scale: 1.02 }}
